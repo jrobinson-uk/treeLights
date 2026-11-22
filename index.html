@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#1f6f3a">
+<title>Tree lights</title>
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" type="image/png" href="/icon-192.png">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<meta name="mobile-web-app-capable" content="yes">
+<style>
+:root{--bg:#f6f5f1;--card:#fff;--text:#1d1d1b;--muted:#6b6a65;--line:#e2e0d8;--accent:#1f6f3a;--off:#2b2b2b}
+@media (prefers-color-scheme:dark){:root{--bg:#141413;--card:#1f1f1d;--text:#f0efe9;--muted:#a3a29b;--line:#34332f;--off:#3a3a38}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:420px;margin:0 auto;padding:20px 16px 32px}
+h1{font-size:22px;font-weight:600;margin:0 0 4px}
+.sub{color:var(--muted);font-size:14px;margin:0 0 8px}
+#tree{display:block;width:100%;max-width:300px;margin:0 auto;cursor:pointer;-webkit-tap-highlight-color:transparent;user-select:none}
+#tree:active{transform:scale(.98)}
+#tree:focus:not(:focus-visible){outline:none}
+.state{text-align:center;font-size:18px;font-weight:600;margin:4px 0 0}
+.hint{text-align:center;color:var(--muted);font-size:13px;margin:0 0 20px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:4px 16px}
+.row{display:flex;justify-content:space-between;align-items:center;padding:12px 0;gap:12px}
+.row+.row{border-top:1px solid var(--line)}
+input[type=time]{font:inherit;color:var(--text);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:6px 8px}
+.sw{position:relative;width:46px;height:28px;border-radius:14px;border:0;background:var(--line);cursor:pointer;padding:0;flex:none}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;transition:transform .2s}
+.sw[aria-checked=true]{background:var(--accent)}
+.sw[aria-checked=true]::after{transform:translateX(18px)}
+#times.dim{opacity:.45}
+.foot{color:var(--muted);font-size:13px;margin:10px 2px 0}
+.err{color:#c0392b}
+.bulb{transition:fill .35s}
+@media (prefers-reduced-motion:no-preference){
+.lit .bulb{animation:tw 2.4s ease-in-out infinite}
+.lit .bulb:nth-child(3n){animation-delay:.8s}
+.lit .bulb:nth-child(3n+1){animation-delay:1.6s}
+@keyframes tw{0%,100%{opacity:1}50%{opacity:.7}}}
+</style>
+</head>
+<body>
+<main>
+<h1>Tree lights</h1>
+<p class="sub" id="clock">&nbsp;</p>
+
+<svg id="tree" viewBox="0 0 300 370" role="button" aria-label="Toggle tree lights" tabindex="0">
+  <ellipse cx="150" cy="345" rx="72" ry="14" fill="#6b4a3a" stroke="#2a1d16" stroke-width="3"/>
+  <rect x="133" y="290" width="34" height="52" rx="4" fill="#7a5643" stroke="#2a1d16" stroke-width="3"/>
+  <path d="M150 140 L28 288 Q150 318 272 288 Z" fill="#2f9e3f" stroke="#123d18" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M150 72 L58 204 Q150 228 242 204 Z" fill="#35ad46" stroke="#123d18" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M150 22 L90 124 Q150 142 210 124 Z" fill="#3cbc4e" stroke="#123d18" stroke-width="3" stroke-linejoin="round"/>
+  <g id="bulbs"></g>
+  <polygon points="150,4 156,19 172,19 159,28 164,43 150,34 136,43 141,28 128,19 144,19" fill="#e63946" stroke="#7a1218" stroke-width="2" stroke-linejoin="round"/>
+</svg>
+<p class="state" id="state">&nbsp;</p>
+<p class="hint" id="hint">Tap the tree</p>
+
+<div class="card">
+  <div class="row"><span><b>Schedule</b></span><button class="sw" id="sw" role="switch" aria-checked="false" aria-label="Schedule"></button></div>
+  <div id="times">
+    <div class="row"><label for="on">On at</label><input type="time" id="on" value="16:00"></div>
+    <div class="row"><label for="off">Off at</label><input type="time" id="off" value="23:00"></div>
+  </div>
+</div>
+<p class="foot" id="next">&nbsp;</p>
+</main>
+<script>
+var COLS=['#2ec4b6','#e63946','#ffd23f','#9b5de5','#ff8c42','#f15bb5','#38b000','#3a86ff','#ef476f'];
+var POS=[[150,58],[130,94],[170,98],[112,120],[150,124],[190,118],
+[124,152],[172,160],[96,184],[140,190],[186,194],[222,200],[78,204],
+[112,240],[194,236],[150,250],[72,270],[130,268],[176,276],[234,272],[100,294],[150,300],[204,298]];
+var g=document.getElementById('bulbs'),NS='http://www.w3.org/2000/svg',S={};
+POS.forEach(function(p,i){var c=document.createElementNS(NS,'circle');c.setAttribute('cx',p[0]);c.setAttribute('cy',p[1]);
+c.setAttribute('r',10);c.setAttribute('class','bulb');c.setAttribute('stroke','#111');c.setAttribute('stroke-width','2');c.dataset.c=COLS[i%COLS.length];g.appendChild(c);});
+function $(i){return document.getElementById(i)}
+function render(s){S=s;var on=s.on;
+  [].forEach.call(g.children,function(c){c.setAttribute('fill',on?c.dataset.c:getComputedStyle(document.documentElement).getPropertyValue('--off'))});
+  $('tree').classList.toggle('lit',on);
+  $('state').textContent=on?'On':'Off';$('hint').textContent=on?'Tap the tree to switch off':'Tap the tree to switch on';
+  var sc=s.schedule;$('sw').setAttribute('aria-checked',sc.enabled);$('times').classList.toggle('dim',!sc.enabled);
+  if(document.activeElement!==$('on'))$('on').value=sc.on;
+  if(document.activeElement!==$('off'))$('off').value=sc.off;
+  $('clock').textContent=s.time?('Tree time '+s.time):'Clock not set yet';
+  $('next').textContent=s.next||'';$('next').className='foot';}
+function fail(){$('next').textContent='Can’t reach the tree. Check you’re on the home WiFi.';$('next').className='foot err'}
+function api(path,body){return fetch(path,body?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}:{})
+  .then(function(r){if(!r.ok)throw 0;return r.json()}).then(render).catch(fail)}
+function toggle(){if(!S.schedule)return;render(Object.assign({},S,{on:!S.on}));api('/api/state',{on:S.on})}
+$('tree').addEventListener('click',toggle);
+$('tree').addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();toggle()}});
+$('sw').addEventListener('click',function(){if(S.schedule)api('/api/schedule',{enabled:!S.schedule.enabled})});
+['on','off'].forEach(function(k){$(k).addEventListener('change',function(){var b={};b[k]=$(k).value;api('/api/schedule',b)})});
+api('/api/state');setInterval(function(){if(!document.hidden)api('/api/state')},10000);
+document.addEventListener('visibilitychange',function(){if(!document.hidden)api('/api/state')});
+</script>
+</body>
+</html>

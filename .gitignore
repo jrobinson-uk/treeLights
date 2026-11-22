@@ -1,0 +1,6 @@
+# WiFi credentials and runtime state: never commit
+wifi_config.py
+config.py
+treelights.json
+__pycache__/
+.DS_Store
