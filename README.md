@@ -49,9 +49,33 @@ The slider runs from 20% to 250% of the original colours, which are 100%. Every 
 
 ## Updating over WiFi
 
-After the first install over USB, open `http://<pico-ip>/update` (or tap **Update software** at the bottom of the page). Choose the changed files, upload them, then restart the Pico.
+After the first install over USB, open `http://<pico-ip>/update` (or tap **Update software** at the bottom of the page).
 
-You can also upload from a terminal:
+### From GitHub
+
+Tap **Check for updates**. The Pico compares its files with the release tagged `stable` in this repo, never `master`, and lists any that differ. **Install** downloads them, checks each against the SHA-256 in `release.json`, then swaps them all in. If `app.py` changed, the Pico restarts.
+
+To make a new stable release from your copy of the repo:
+
+```bash
+python3 make_release.py
+```
+
+```bash
+git add -A && git commit -m "Release" && git push
+```
+
+```bash
+git tag -f stable && git push -f origin stable
+```
+
+`make_release.py` writes `release.json` with each Pico file's size and hash. It takes an optional version name and defaults to today's date. Work pushed to `master` doesn't reach the Pico until you move the `stable` tag.
+
+The Pico doesn't verify GitHub's certificate (MicroPython doesn't by default), so on a network you don't trust, someone could feed it other files. The repo is public, so it needs no keys.
+
+### Uploading files yourself
+
+Choose the changed files on the update page, upload them, then restart the Pico. You can also upload from a terminal:
 
 ```bash
 curl --data-binary @app.py "http://<pico-ip>/api/upload?name=app.py"
@@ -73,7 +97,8 @@ curl -X POST http://<pico-ip>/api/restart
 | `main.py` | Loader: runs `app.py` and rolls back a failed update |
 | `app.py` | Lights, BOOTSEL button, schedule, WiFi, clock (UK time) and web server |
 | `index.html` | The web page |
-| `update.html` | The page for uploading new files |
+| `update.html` | The page for updating from GitHub or uploading files |
+| `make_release.py`, `release.json` | Makes and holds the list of files in a stable release |
 | `manifest.json`, `icon-*.png` | Home-screen icon |
 | `wifi_config.example.py` | Template for your WiFi details |
 | `treelights.json` | Saved on/off state and schedule, created on the Pico |

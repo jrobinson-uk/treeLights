@@ -17,7 +17,9 @@
 #
 # Controls: the web page at http://<pico-ip>/ , or press BOOTSEL to toggle.
 
+import binascii
 import gc
+import hashlib
 import json
 import os
 import time
@@ -327,28 +329,159 @@ async def _receive_upload(reader, name, length):
     if got != length:
         _remove(tmp)
         return "400 Bad Request", "upload cut short"
-    if name.endswith(".py"):
+    err = _syntax_error(tmp, name)
+    if err:
+        _remove(tmp)
+        return "400 Bad Request", err
+    _swap_in(tmp, name)
+    return "200 OK", "saved %s (%d bytes)" % (name, got)
+
+
+def _syntax_error(tmp, name):
+    """Compile a downloaded .py file; return an error message, or None if it's fine."""
+    if not name.endswith(".py"):
+        return None
+    gc.collect()
+    try:
+        with open(tmp) as f:
+            compile(f.read(), name, "exec")
+    except SyntaxError as e:
+        return "syntax error in %s: %s" % (name, e)
+    except MemoryError:
+        pass  # too big to check here; the loader still rolls back if it fails
+    finally:
         gc.collect()
-        try:
-            with open(tmp) as f:
-                compile(f.read(), name, "exec")
-        except SyntaxError as e:
-            _remove(tmp)
-            return "400 Bad Request", "syntax error in %s: %s" % (name, e)
-        except MemoryError:
-            pass  # too big to check here; the loader still rolls back if it fails
-        gc.collect()
+    return None
+
+
+def _swap_in(tmp, name):
+    """Replace name with tmp. A new app.py goes on trial until it's run for 30s."""
+    if name == "app.py" and _exists(name):
         # Keep the running version so the loader can roll back after restart.
-        if _exists(name):
-            _remove("app.bak")
-            os.rename(name, "app.bak")
-            open(PENDING_FILE, "w").close()
+        _remove("app.bak")
+        os.rename(name, "app.bak")
+        open(PENDING_FILE, "w").close()
     else:
         _remove(name)
     os.rename(tmp, name)
     _remove("app_error.txt")
-    print("updated:", name, got, "bytes")
-    return "200 OK", "saved %s (%d bytes)" % (name, got)
+    print("updated:", name)
+
+
+# ---------- updates from GitHub ----------
+# The Pico installs the release tagged "stable" in the repo, never master.
+# release.json at that tag lists each file's size and SHA-256; files that
+# differ from it are downloaded, checked, then swapped in together.
+
+GITHUB_REPO = "jrobinson-uk/treeLights"
+GITHUB_REF = "stable"
+
+
+def _sha256_file(name):
+    h = hashlib.sha256()
+    try:
+        with open(name, "rb") as f:
+            while True:
+                b = f.read(1024)
+                if not b:
+                    break
+                h.update(b)
+    except OSError:
+        return None
+    return binascii.hexlify(h.digest()).decode()
+
+
+def _http_get(url, accept=None):
+    import requests  # loaded only when needed: TLS uses a lot of memory
+    gc.collect()
+    headers = {"User-Agent": "treelights-pico"}
+    if accept:
+        headers["Accept"] = accept
+    r = requests.get(url, headers=headers, timeout=20)
+    if r.status_code != 200:
+        r.close()
+        raise OSError("GitHub returned %d for %s" % (r.status_code, url))
+    return r
+
+
+def _stable_release():
+    """Return (commit sha, release manifest) for the stable tag."""
+    r = _http_get("https://api.github.com/repos/%s/commits/%s" % (GITHUB_REPO, GITHUB_REF),
+                  "application/vnd.github.sha")
+    sha = r.text.strip()
+    r.close()
+    if len(sha) != 40:
+        raise OSError("couldn't find the stable tag")
+    r = _http_get("https://raw.githubusercontent.com/%s/%s/release.json" % (GITHUB_REPO, sha))
+    manifest = r.json()
+    r.close()
+    return sha, manifest
+
+
+def _compare(manifest):
+    changed, usb_only = [], []
+    for f in manifest["files"]:
+        if _sha256_file(f["name"]) != f["sha256"]:
+            (changed if f["name"] in UPLOADABLE else usb_only).append(f)
+    return changed, usb_only
+
+
+def github_check():
+    sha, manifest = _stable_release()
+    changed, usb_only = _compare(manifest)
+    return {"ok": True, "version": manifest.get("version", "?"), "commit": sha[:7],
+            "changed": [f["name"] for f in changed],
+            "usb_only": [f["name"] for f in usb_only]}
+
+
+def _download(sha, f):
+    """Download one release file to <name>.dl and check its size and hash."""
+    tmp = f["name"] + ".dl"
+    r = _http_get("https://raw.githubusercontent.com/%s/%s/%s" % (GITHUB_REPO, sha, f["name"]))
+    h, got = hashlib.sha256(), 0
+    try:
+        with open(tmp, "wb") as out:
+            while True:
+                b = r.raw.read(1024)
+                if not b:
+                    break
+                out.write(b)
+                h.update(b)
+                got += len(b)
+    finally:
+        r.close()
+    if got != f["size"] or binascii.hexlify(h.digest()).decode() != f["sha256"]:
+        _remove(tmp)
+        raise OSError("%s didn't match release.json (got %d bytes)" % (f["name"], got))
+    return tmp
+
+
+def github_install():
+    sha, manifest = _stable_release()
+    changed, usb_only = _compare(manifest)
+    if not changed:
+        return {"ok": True, "installed": [], "restart": False, "version": manifest.get("version", "?"),
+                "usb_only": [f["name"] for f in usb_only], "message": "Already up to date"}
+    if sum(f["size"] for f in changed) + 32 * 1024 > _free_bytes():
+        raise OSError("not enough space on the Pico")
+    done = []
+    try:
+        for f in changed:            # download and check everything first...
+            done.append((_download(sha, f), f["name"]))
+        for tmp, name in done:
+            err = _syntax_error(tmp, name)
+            if err:
+                raise OSError(err)
+    except Exception:
+        for tmp, _ in done:
+            _remove(tmp)
+        raise
+    for tmp, name in done:           # ...then swap them all in
+        _swap_in(tmp, name)
+    names = [n for _, n in done]
+    return {"ok": True, "installed": names, "restart": "app.py" in names,
+            "version": manifest.get("version", "?"), "usb_only": [f["name"] for f in usb_only],
+            "message": "Installed %d file%s" % (len(names), "" if len(names) == 1 else "s")}
 
 
 async def _restart_soon():
@@ -421,6 +554,25 @@ async def handle(reader, writer):
                 pass
             _send_json(writer, info)
             await writer.drain()
+            return
+        if path in ("/api/github", "/api/github/install"):
+            # These block the Pico for a few seconds while it talks to GitHub;
+            # the lights stay as they are.
+            result = {}
+            try:
+                if path == "/api/github" and method == "GET":
+                    result = github_check()
+                elif method == "POST":
+                    result = github_install()
+                else:
+                    raise OSError("use GET to check or POST to install")
+                _send_json(writer, result)
+            except Exception as e:
+                print("github error:", e)
+                _send_json(writer, {"ok": False, "message": str(e) or repr(e)}, "502 Bad Gateway")
+            await writer.drain()
+            if path.endswith("install") and result.get("restart"):
+                asyncio.create_task(_restart_soon())
             return
         if path == "/api/restart" and method == "POST":
             _send_json(writer, {"ok": True, "message": "restarting"})

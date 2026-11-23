@@ -1,0 +1,40 @@
+{
+ "version": "2026.11.23",
+ "files": [
+  {
+   "name": "main.py",
+   "size": 1238,
+   "sha256": "ae003a5a58b5a3d8f18b22557aa04cf6b4bed471ef51c332e618a9df435d0a72"
+  },
+  {
+   "name": "app.py",
+   "size": 20492,
+   "sha256": "e3e65ee83e9e4f778c060e82272afbfafba2c0eabb7a9ea782877517e1ca5bca"
+  },
+  {
+   "name": "index.html",
+   "size": 8126,
+   "sha256": "55e5fc627a4a5b9a7c004771f90d16a82a1dd7b675e87720c73b100a3165a88d"
+  },
+  {
+   "name": "update.html",
+   "size": 7241,
+   "sha256": "3c0f680c7c5298f6b12373c751b1070e399a0b94e0d8d8c3202bd0b98b7a4d05"
+  },
+  {
+   "name": "manifest.json",
+   "size": 380,
+   "sha256": "e8abe822a3cdd4fcb32714cbed9382a245c39bb121e8c35559a3ff608081f3aa"
+  },
+  {
+   "name": "icon-192.png",
+   "size": 9305,
+   "sha256": "fec51e413c59c5c7e8a151eb77caef14277acd7fed7766f137df3c61a6740234"
+  },
+  {
+   "name": "icon-512.png",
+   "size": 33258,
+   "sha256": "2dd17cb2e4e814b4d1f32212369f6527dc21c80ffece9477f99613acdf0279bb"
+  }
+ ]
+}

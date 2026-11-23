@@ -17,6 +17,7 @@ p{margin:0 0 12px}
 .muted{color:var(--muted);font-size:14px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
 button{font:inherit;border:0;border-radius:10px;padding:10px 16px;background:var(--accent);color:#fff;cursor:pointer}
+button+button{margin-left:8px}
 button.secondary{background:transparent;color:var(--text);border:1px solid var(--line)}
 button:disabled{opacity:.5;cursor:default}
 input[type=file]{font:inherit;max-width:100%;margin:4px 0 12px}
@@ -33,6 +34,14 @@ a{color:var(--muted)}
 <h1>Update software</h1>
 <p class="muted" id="info">Checking the Pico…</p>
 
+<div class="card">
+  <p><b>Stable release on GitHub</b><br><span class="muted">Installs the version tagged <code>stable</code> in the treeLights repo. Takes a few seconds; the lights stay on.</span></p>
+  <button id="gcheck">Check for updates</button>
+  <button id="ginstall" hidden>Install</button>
+  <p class="muted" id="gstatus" style="margin:10px 0 0" aria-live="polite"></p>
+</div>
+
+<p class="muted" style="margin:20px 0 0"><b>Or upload files yourself</b></p>
 <div class="card">
   <p><b>1. Choose files</b><br><span class="muted">Allowed: <span id="allowed">app.py, index.html, update.html, manifest.json, icon-192.png, icon-512.png</span></span></p>
   <input type="file" id="files" multiple>
@@ -80,6 +89,31 @@ $('restart').addEventListener('click',function(){
       fetch('/api/update',{cache:'no-store'}).then(function(r){if(!r.ok)throw 0;clearInterval(t);
         $('rs').textContent='Back up.';$('restart').disabled=false;loadInfo()})
       .catch(function(){if(tries>40){clearInterval(t);$('rs').textContent='Still not back after 2 minutes. Check the Pico has power.';$('restart').disabled=false}})},3000)});
+});
+function gstatus(t,cls){$('gstatus').textContent=t;$('gstatus').className=cls||'muted'}
+function waitForRestart(done){var tries=0,t=setInterval(function(){tries++;
+  fetch('/api/update',{cache:'no-store'}).then(function(r){if(!r.ok)throw 0;clearInterval(t);done(true)})
+  .catch(function(){if(tries>40){clearInterval(t);done(false)}})},3000)}
+function usbNote(j){return j.usb_only&&j.usb_only.length?' '+j.usb_only.join(', ')+' also changed, but needs USB.':''}
+$('gcheck').addEventListener('click',function(){
+  $('gcheck').disabled=true;$('ginstall').hidden=true;gstatus('Checking GitHub…');
+  fetch('/api/github',{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
+    if(!j.ok){gstatus(j.message,'err');return}
+    var v='Stable is '+j.version+' ('+j.commit+'). ';
+    if(!j.changed.length){gstatus(v+'This Pico is up to date.'+usbNote(j),'ok');return}
+    gstatus(v+'Different here: '+j.changed.join(', ')+'.'+usbNote(j));
+    $('ginstall').textContent='Install '+j.changed.length+' file'+(j.changed.length>1?'s':'');$('ginstall').hidden=false;
+  }).catch(function(){gstatus('Can’t reach the Pico.','err')}).then(function(){$('gcheck').disabled=false});
+});
+$('ginstall').addEventListener('click',function(){
+  $('ginstall').disabled=true;$('gcheck').disabled=true;gstatus('Downloading and checking files…');
+  fetch('/api/github/install',{method:'POST'}).then(function(r){return r.json()}).then(function(j){
+    if(!j.ok){gstatus('Nothing changed: '+j.message,'err');return}
+    $('ginstall').hidden=true;
+    if(!j.restart){gstatus(j.message+(j.installed.length?' ('+j.installed.join(', ')+')':'')+'. Reload to see page changes.'+usbNote(j),'ok');loadInfo();return}
+    gstatus(j.message+'. Restarting…');
+    waitForRestart(function(ok){gstatus(ok?j.message+'. Back up and running '+j.version+'.':'Still restarting after 2 minutes. Check the Pico has power.',ok?'ok':'err');loadInfo()});
+  }).catch(function(){gstatus('Can’t reach the Pico.','err')}).then(function(){$('ginstall').disabled=false;$('gcheck').disabled=false});
 });
 loadInfo();
 </script>
