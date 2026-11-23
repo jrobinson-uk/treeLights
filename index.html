@@ -35,6 +35,28 @@ input[type=time]{font:inherit;color:var(--text);background:var(--bg);border:1px 
 .bright{display:flex;align-items:center;gap:10px;flex:1;max-width:230px}
 .bright input{flex:1;accent-color:var(--accent);min-width:0}
 .bright output{min-width:42px;text-align:right;color:var(--muted);font-size:14px;font-variant-numeric:tabular-nums}
+details.card{padding:4px 16px}
+summary{display:flex;justify-content:space-between;align-items:center;padding:12px 0;cursor:pointer;list-style:none}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"Edit";color:var(--muted);font-size:14px}
+details[open] summary::after{content:"Done"}
+.chips{display:flex;gap:3px}.chips i{width:12px;height:12px;border-radius:50%;border:1px solid var(--line)}
+.note{color:var(--muted);font-size:13px;margin:0 0 8px}
+#cols{list-style:none;margin:0;padding:0;counter-reset:c}
+#cols li{border-top:1px solid var(--line);padding:10px 0;counter-increment:c}
+.ctop{display:flex;align-items:center;gap:8px}
+.ctop::before{content:counter(c);color:var(--muted);font-size:13px;min-width:18px}
+.ctop input[type=color]{width:44px;height:32px;padding:0;border:1px solid var(--line);border-radius:8px;background:none;cursor:pointer}
+.ctop .sp{flex:1}
+.ib{font:inherit;font-size:15px;width:36px;height:32px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--text);cursor:pointer;padding:0}
+.ib:disabled{opacity:.35;cursor:default}
+.rgb{display:flex;gap:10px;margin:8px 0 0 26px;font-size:13px;color:var(--muted)}
+.rgb label{display:flex;align-items:center;gap:4px}
+.rgb input{font:inherit;font-size:14px;width:58px;color:var(--text);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:4px 6px}
+.cbtns{display:flex;gap:8px;padding:12px 0;border-top:1px solid var(--line)}
+.btn{font:inherit;font-size:14px;border:0;border-radius:10px;padding:8px 14px;background:var(--accent);color:#fff;cursor:pointer}
+.btn.secondary{background:transparent;color:var(--text);border:1px solid var(--line)}
+.btn:disabled{opacity:.5;cursor:default}
 .foot a{color:var(--muted)}
 .foot{color:var(--muted);font-size:13px;margin:10px 2px 0}
 .err{color:#c0392b}
@@ -67,6 +89,13 @@ input[type=time]{font:inherit;color:var(--text);background:var(--bg);border:1px 
   <div class="row"><label for="bri"><b>Brightness</b></label>
     <span class="bright"><input type="range" id="bri" min="20" max="250" step="5" value="100" aria-describedby="briv"><output id="briv" for="bri">100%</output></span></div>
 </div>
+<details class="card" id="colcard">
+  <summary><b>Colours</b><span class="chips" id="chips"></span></summary>
+  <p class="note">The pattern repeats along the string in this order. Tap a colour to change it, or tweak its red, green and blue (0–255, as sent to the lights at 100% brightness). Changes show on the tree straight away.</p>
+  <ol id="cols"></ol>
+  <div class="cbtns"><button class="btn" id="addc">Add colour</button><button class="btn secondary" id="resetc">Original colours</button></div>
+  <p class="note err" id="colerr" hidden></p>
+</details>
 <div class="card">
   <div class="row"><span><b>Schedule</b></span><button class="sw" id="sw" role="switch" aria-checked="false" aria-label="Schedule"></button></div>
   <div id="times">
@@ -78,18 +107,25 @@ input[type=time]{font:inherit;color:var(--text);background:var(--bg);border:1px 
 <p class="foot"><a href="/update">Update software</a></p>
 </main>
 <script>
-var COLS=['#2ec4b6','#e63946','#ffd23f','#9b5de5','#ff8c42','#f15bb5','#38b000','#3a86ff','#ef476f'];
+// Each LED colour is [red, green, blue] at 100% brightness (small numbers:
+// the repo's colours are 0-53). On screen they're stretched to full
+// brightness with the sRGB curve, so they look roughly like the real bulbs.
+var C=[[0,15,9],[35,0,0],[32,15,0],[32,0,38],[53,15,0],[35,0,21],[0,24,0],[0,0,21],[47,0,6]],MAXC=24;
+function toScreen(c){var m=Math.max(c[0],c[1],c[2]);if(!m)return'#000000';
+  return'#'+c.map(function(v){var l=v/m,s=l<=0.0031308?12.92*l:1.055*Math.pow(l,1/2.4)-0.055,h=Math.round(s*255);return(h<16?'0':'')+h.toString(16)}).join('')}
+function fromScreen(hex,level){var l=[1,3,5].map(function(i){var s=parseInt(hex.substr(i,2),16)/255;return s<=0.04045?s/12.92:Math.pow((s+0.055)/1.055,2.4)}),
+  m=Math.max(l[0],l[1],l[2]);if(!m)return[0,0,0];return l.map(function(v){return Math.round(v/m*level)})}
 var POS=[[150,58],[130,94],[170,98],[112,120],[150,124],[190,118],
 [124,152],[172,160],[96,184],[140,190],[186,194],[222,200],[78,204],
 [112,240],[194,236],[150,250],[72,270],[130,268],[176,276],[234,272],[100,294],[150,300],[204,298]];
 var g=document.getElementById('bulbs'),NS='http://www.w3.org/2000/svg',S={};
 POS.forEach(function(p,i){var c=document.createElementNS(NS,'circle');c.setAttribute('cx',p[0]);c.setAttribute('cy',p[1]);
-c.setAttribute('r',10);c.setAttribute('class','bulb');c.setAttribute('stroke','#111');c.setAttribute('stroke-width','2');c.dataset.c=COLS[i%COLS.length];g.appendChild(c);});
+c.setAttribute('r',10);c.setAttribute('class','bulb');c.setAttribute('stroke','#111');c.setAttribute('stroke-width','2');g.appendChild(c);});
 function $(i){return document.getElementById(i)}
 // Bulb colour on screen: dimmed towards black below 100% brightness.
 function dim(hex,k){return '#'+[1,3,5].map(function(i){var v=Math.round(parseInt(hex.substr(i,2),16)*k);return(v<16?'0':'')+v.toString(16)}).join('')}
 function paint(){var on=S.on,k=0.35+0.65*Math.min(1,(+$('bri').value)/100);
-  [].forEach.call(g.children,function(c){c.setAttribute('fill',on?dim(c.dataset.c,k):getComputedStyle(document.documentElement).getPropertyValue('--off'))})}
+  [].forEach.call(g.children,function(c,i){c.setAttribute('fill',on?dim(toScreen(C[i%C.length]),k):getComputedStyle(document.documentElement).getPropertyValue('--off'))})}
 function render(s){S=s;var on=s.on;
   $('tree').classList.toggle('lit',on);
   $('state').textContent=on?'On':'Off';$('hint').textContent=on?'Tap the tree to switch off':'Tap the tree to switch on';
@@ -97,6 +133,8 @@ function render(s){S=s;var on=s.on;
   if(document.activeElement!==$('on'))$('on').value=sc.on;
   if(document.activeElement!==$('off'))$('off').value=sc.off;
   if(s.brightness_range){$('bri').min=s.brightness_range[0];$('bri').max=s.brightness_range[1]}
+  if(s.colours&&!colBusy()){C=s.colours.map(function(c){return c.slice()});MAXC=s.max_colours||MAXC;drawCols()}
+  $('resetc').disabled=!s.colours_custom&&!colTimer;
   if(!dragging&&s.brightness)showBri(s.brightness);else paint();
   $('clock').textContent=s.time?('Tree time '+s.time):'Clock not set yet';
   $('next').textContent=s.next||'';$('next').className='foot';}
@@ -114,6 +152,39 @@ function showBri(v){$('bri').value=v;$('briv').textContent=v+'%';
 function sendBri(){briTimer=null;var v=+$('bri').value;if(v===briSent)return;briSent=v;api('/api/state',{brightness:v})}
 $('bri').addEventListener('input',function(){dragging=true;showBri(+this.value);if(!briTimer)briTimer=setTimeout(sendBri,300)});
 $('bri').addEventListener('change',function(){dragging=false;clearTimeout(briTimer);sendBri()});
+// Colours: edit C locally, send at most every 300ms.
+var colTimer=null,colEdited=0;
+function colBusy(){return colTimer||Date.now()-colEdited<1500||$('cols').contains(document.activeElement)&&document.activeElement.type==='number'}
+function chips(){$('chips').innerHTML='';C.forEach(function(c){var i=document.createElement('i');i.style.background=toScreen(c);$('chips').appendChild(i)})}
+function colErr(t){$('colerr').textContent=t||'';$('colerr').hidden=!t}
+function sendCols(){colTimer=null;colEdited=Date.now();
+  fetch('/api/colours',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({colours:C})})
+  .then(function(r){return r.json().then(function(j){if(!r.ok)throw j.error||0;colErr('');render(j)})})
+  .catch(function(e){colErr(typeof e==='string'?'Not saved: '+e:'Can’t reach the tree.')})}
+function changed(redraw){colEdited=Date.now();if(redraw)drawCols();else chips();paint();clearTimeout(colTimer);colTimer=setTimeout(sendCols,300)}
+function ib(text,label,dis,fn){var b=document.createElement('button');b.className='ib';b.textContent=text;b.setAttribute('aria-label',label);b.disabled=dis;b.addEventListener('click',fn);return b}
+function drawCols(){var ol=$('cols');ol.innerHTML='';
+  C.forEach(function(c,i){var li=document.createElement('li'),top=document.createElement('div'),pick=document.createElement('input');
+    top.className='ctop';pick.type='color';pick.value=toScreen(c);pick.setAttribute('aria-label','Colour '+(i+1));
+    pick.addEventListener('input',function(){var lvl=Math.max(c[0],c[1],c[2])||35,n=fromScreen(this.value,lvl);c[0]=n[0];c[1]=n[1];c[2]=n[2];
+      ['r','g','b'].forEach(function(k,j){nums[j].value=c[j]});changed()});
+    var sp=document.createElement('span');sp.className='sp';
+    top.append(pick,sp,
+      ib('↑','Move colour '+(i+1)+' earlier',i===0,function(){C.splice(i-1,0,C.splice(i,1)[0]);changed(true)}),
+      ib('↓','Move colour '+(i+1)+' later',i===C.length-1,function(){C.splice(i+1,0,C.splice(i,1)[0]);changed(true)}),
+      ib('✕','Remove colour '+(i+1),C.length<2,function(){C.splice(i,1);changed(true)}));
+    var row=document.createElement('div'),nums=[];row.className='rgb';
+    ['Red','Green','Blue'].forEach(function(name,j){var lab=document.createElement('label'),n=document.createElement('input');
+      n.type='number';n.min=0;n.max=255;n.step=1;n.inputMode='numeric';n.value=c[j];n.setAttribute('aria-label',name+' for colour '+(i+1));
+      n.addEventListener('input',function(){var v=Math.round(+this.value);if(this.value===''||isNaN(v))return;c[j]=Math.max(0,Math.min(255,v));pick.value=toScreen(c);changed()});
+      n.addEventListener('change',function(){this.value=c[j]});
+      lab.append(name[0],n);row.appendChild(lab);nums.push(n)});
+    li.append(top,row);ol.appendChild(li)});
+  $('addc').disabled=C.length>=MAXC;chips()}
+$('addc').addEventListener('click',function(){C.push(C[C.length-1].slice());changed(true)});
+$('resetc').addEventListener('click',function(){if(!confirm('Go back to the original colours?'))return;clearTimeout(colTimer);colTimer=null;colEdited=0;
+  api('/api/colours',{reset:true})});
+drawCols();
 ['on','off'].forEach(function(k){$(k).addEventListener('change',function(){var b={};b[k]=$(k).value;api('/api/schedule',b)})});
 api('/api/state');setInterval(function(){if(!document.hidden)api('/api/state')},10000);
 document.addEventListener('visibilitychange',function(){if(!document.hidden)api('/api/state')});

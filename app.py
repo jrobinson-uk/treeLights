@@ -64,7 +64,15 @@ wlan = network.WLAN(network.STA_IF)
 BRIGHTNESS_MIN = 20
 BRIGHTNESS_MAX = 250
 
-state = {"on": True, "brightness": 100,
+# Custom colours from the web page are stored as [red, green, blue], as you
+# see them, at 100% brightness. None means the repo's colours above.
+MAX_COLOURS = 24
+# Power limit: average (red+green+blue) across the pattern x brightness %.
+# The repo's colours average 44.2, so 11100 allows them up to 250% (about
+# 1.75A). Brighter custom colours lower the top of the brightness slider.
+POWER_BUDGET = 11100
+
+state = {"on": True, "brightness": 100, "colours": None,
          "schedule": {"enabled": False, "on": "16:00", "off": "23:00"}}
 clock_ok = False
 
@@ -75,16 +83,39 @@ def scaled(colour, pct):
     return tuple(min(255, (c * pct + 50) // 100) for c in colour)
 
 
-def show(pattern):
-    pct = state["brightness"]
-    pattern = [scaled(c, pct) for c in pattern]
+def pattern():
+    """The colour pattern as neopixel tuples (this string's tuple order is G, R, B)."""
+    cs = state["colours"]
+    return [(c[1], c[0], c[2]) for c in cs] if cs else colourful
+
+
+def as_seen(t):
+    return [t[1], t[0], t[2]]
+
+
+def brightness_max():
+    p = pattern()
+    avg = sum(sum(c) for c in p) / len(p)
+    if avg <= 0:
+        return BRIGHTNESS_MAX
+    return max(BRIGHTNESS_MIN, min(BRIGHTNESS_MAX, int(POWER_BUDGET / avg)))
+
+
+def shown_brightness():
+    # The saved brightness, lowered if the colours need it to stay in budget.
+    return min(state["brightness"], brightness_max())
+
+
+def show(pat):
+    pct = shown_brightness()
+    pat = [scaled(c, pct) for c in pat]
     for i in range(LED_COUNT):
-        np[i] = pattern[i % len(pattern)]
+        np[i] = pat[i % len(pat)]
     np.write()
 
 
 def apply_lights():
-    show(colourful if state["on"] else off)
+    show(pattern() if state["on"] else off)
     status_led.value(1 if state["on"] else 0)
 
 
@@ -93,6 +124,8 @@ def load_state():
         with open(STATE_FILE) as f:
             saved = json.load(f)
         state["on"] = bool(saved.get("on", True))
+        if check_colours(saved.get("colours")) is None:
+            state["colours"] = saved["colours"]
         state["brightness"] = clamp_brightness(saved.get("brightness", 100))
         state["schedule"].update(saved.get("schedule", {}))
     except (OSError, ValueError):
@@ -122,12 +155,40 @@ def clamp_brightness(b, default=100):
 
 
 def set_brightness(b):
-    b = clamp_brightness(b, state["brightness"])
+    b = min(clamp_brightness(b, state["brightness"]), brightness_max())
     if state["brightness"] != b:
         state["brightness"] = b
         if state["on"]:
-            show(colourful)
+            show(pattern())
         save_state()
+
+
+def check_colours(cs):
+    """Return an error message, or None if cs is a usable colour list."""
+    if not isinstance(cs, list) or not 1 <= len(cs) <= MAX_COLOURS:
+        return "need 1 to %d colours" % MAX_COLOURS
+    for c in cs:
+        if not (isinstance(c, list) and len(c) == 3 and
+                all(isinstance(v, int) and 0 <= v <= 255 for v in c)):
+            return "each colour must be [red, green, blue], 0 to 255"
+    if sum(sum(c) for c in cs) / len(cs) * BRIGHTNESS_MIN > POWER_BUDGET:
+        return "those colours are too bright for the power supply"
+    return None
+
+
+def set_colours(cs):
+    """cs is a list of [r, g, b] as seen, or None for the repo's colours."""
+    if cs is not None:
+        err = check_colours(cs)
+        if err:
+            return err
+        if [(c[1], c[0], c[2]) for c in cs] == colourful:
+            cs = None
+    state["colours"] = cs
+    if state["on"]:
+        show(pattern())
+    save_state()
+    return None
 
 
 # ---------- UK time (GMT / BST) ----------
@@ -172,8 +233,11 @@ def next_event_text():
 def public_state():
     return {
         "on": state["on"],
-        "brightness": state["brightness"],
-        "brightness_range": [BRIGHTNESS_MIN, BRIGHTNESS_MAX],
+        "brightness": shown_brightness(),
+        "brightness_range": [BRIGHTNESS_MIN, brightness_max()],
+        "colours": [as_seen(c) for c in pattern()],
+        "colours_custom": state["colours"] is not None,
+        "max_colours": MAX_COLOURS,
         "schedule": state["schedule"],
         "time": hhmm(uk_now()) if clock_ok else None,
         "next": next_event_text(),
@@ -582,7 +646,7 @@ async def handle(reader, writer):
 
         body = {}
         if length:
-            body = json.loads(await reader.readexactly(min(length, 1024)))
+            body = json.loads(await reader.readexactly(min(length, 2048)))
 
         if path == "/favicon.ico":
             path = "/icon-192.png"
@@ -595,6 +659,12 @@ async def handle(reader, writer):
             if method == "POST" and "brightness" in body:
                 set_brightness(body["brightness"])
             _send_json(writer, public_state())
+        elif path == "/api/colours" and method == "POST":
+            err = set_colours(None if body.get("reset") else body.get("colours"))
+            if err:
+                _send_json(writer, {"error": err}, "400 Bad Request")
+            else:
+                _send_json(writer, public_state())
         elif path == "/api/schedule" and method == "POST":
             sc = state["schedule"]
             if "enabled" in body:

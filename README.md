@@ -47,6 +47,12 @@ Both have the tree engraved on the lid, a plunger for the BOOTSEL button, and ke
 
 The slider runs from 20% to 250% of the original colours, which are 100%. Every colour channel is scaled by the same amount, so each colour keeps its tone. The 250% limit keeps the string at about 1.75 A, within what a 2–3 A charger can pass through the Pico.
 
+## Colours
+
+Open **Colours** on the web page to change the pattern. You can reorder colours, add or remove them (1 to 24), pick a new colour, or fine-tune each one's red, green and blue. Changes show on the tree straight away and are saved on the Pico. **Original colours** puts the repo's colours back.
+
+The red, green and blue numbers are what's sent to the lights at 100% brightness; the originals run from 0 to 53. When you pick a colour, it keeps the brightness level that colour already had. Colours brighter on average than the originals lower the top of the brightness slider, so the string stays within the same power limit. Your chosen brightness comes back if you dim the colours again.
+
 ## Updating over WiFi
 
 After the first install over USB, open `http://<pico-ip>/update` (or tap **Update software** at the bottom of the page).
