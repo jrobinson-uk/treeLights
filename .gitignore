@@ -4,3 +4,9 @@ config.py
 treelights.json
 __pycache__/
 .DS_Store
+# Files the Pico makes during WiFi updates
+app.bak
+app.bad
+app_error.txt
+update_pending
+*.new

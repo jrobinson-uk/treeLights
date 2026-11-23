@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#1f6f3a">
+<title>Update tree lights</title>
+<link rel="icon" type="image/png" href="/icon-192.png">
+<style>
+:root{--bg:#f6f5f1;--card:#fff;--text:#1d1d1b;--muted:#6b6a65;--line:#e2e0d8;--accent:#1f6f3a;--err:#c0392b;--ok:#1f6f3a}
+@media (prefers-color-scheme:dark){:root{--bg:#141413;--card:#1f1f1d;--text:#f0efe9;--muted:#a3a29b;--line:#34332f;--err:#ff7b6b;--ok:#6fcf8a}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:520px;margin:0 auto;padding:20px 16px 32px}
+h1{font-size:22px;font-weight:600;margin:0 0 4px}
+p{margin:0 0 12px}
+.muted{color:var(--muted);font-size:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+button{font:inherit;border:0;border-radius:10px;padding:10px 16px;background:var(--accent);color:#fff;cursor:pointer}
+button.secondary{background:transparent;color:var(--text);border:1px solid var(--line)}
+button:disabled{opacity:.5;cursor:default}
+input[type=file]{font:inherit;max-width:100%;margin:4px 0 12px}
+ul{list-style:none;padding:0;margin:12px 0 0}
+li{padding:6px 0;border-top:1px solid var(--line);font-size:14px;overflow-wrap:anywhere}
+.ok{color:var(--ok)}.err{color:var(--err)}
+pre{white-space:pre-wrap;font-size:12px;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px;overflow:auto}
+code{font-size:13px}
+a{color:var(--muted)}
+</style>
+</head>
+<body>
+<main>
+<h1>Update software</h1>
+<p class="muted" id="info">Checking the Pico…</p>
+
+<div class="card">
+  <p><b>1. Choose files</b><br><span class="muted">Allowed: <span id="allowed">app.py, index.html, update.html, manifest.json, icon-192.png, icon-512.png</span></span></p>
+  <input type="file" id="files" multiple>
+  <div><button id="up" disabled>Upload</button></div>
+  <ul id="log"></ul>
+</div>
+
+<div class="card">
+  <p><b>2. Restart</b><br><span class="muted">Page and icon changes work straight away. A new <code>app.py</code> runs after a restart. If it doesn't start, the Pico goes back to the previous version by itself.</span></p>
+  <button class="secondary" id="restart">Restart the Pico</button>
+  <p class="muted" id="rs" style="margin:10px 0 0"></p>
+</div>
+
+<div class="card" id="errcard" hidden>
+  <p><b>Last startup error</b></p>
+  <pre id="err"></pre>
+</div>
+
+<p class="muted"><a href="/">Back to the tree</a></p>
+</main>
+<script>
+function $(i){return document.getElementById(i)}
+var allowed=[];
+function li(text,cls){var e=document.createElement('li');e.textContent=text;if(cls)e.className=cls;$('log').appendChild(e);return e}
+function loadInfo(){return fetch('/api/update').then(function(r){return r.json()}).then(function(i){
+  allowed=i.files;$('allowed').textContent=i.files.join(', ');
+  $('info').textContent=i.free_kb+' KB free on the Pico'+(i.pending?' · new app.py on trial':'');
+  $('errcard').hidden=!i.last_error;$('err').textContent=i.last_error||'';
+}).catch(function(){$('info').textContent='Can’t reach the Pico.';$('info').className='err'})}
+$('files').addEventListener('change',function(){$('up').disabled=!this.files.length});
+$('up').addEventListener('click',function(){
+  var fs=[].slice.call($('files').files);$('log').innerHTML='';$('up').disabled=true;
+  fs.reduce(function(p,f){return p.then(function(){
+    if(allowed.length&&allowed.indexOf(f.name)<0){li(f.name+': not an allowed file name','err');return}
+    var row=li(f.name+': uploading…');
+    return fetch('/api/upload?name='+encodeURIComponent(f.name),{method:'POST',body:f})
+      .then(function(r){return r.json()}).then(function(j){row.textContent=f.name+': '+j.message;row.className=j.ok?'ok':'err'})
+      .catch(function(){row.textContent=f.name+': upload failed';row.className='err'});
+  })},Promise.resolve()).then(function(){$('up').disabled=false;loadInfo()});
+});
+$('restart').addEventListener('click',function(){
+  $('restart').disabled=true;$('rs').textContent='Restarting…';
+  fetch('/api/restart',{method:'POST'}).catch(function(){}).then(function(){
+    var tries=0,t=setInterval(function(){tries++;
+      fetch('/api/update',{cache:'no-store'}).then(function(r){if(!r.ok)throw 0;clearInterval(t);
+        $('rs').textContent='Back up.';$('restart').disabled=false;loadInfo()})
+      .catch(function(){if(tries>40){clearInterval(t);$('rs').textContent='Still not back after 2 minutes. Check the Pico has power.';$('restart').disabled=false}})},3000)});
+});
+loadInfo();
+</script>
+</body>
+</html>
