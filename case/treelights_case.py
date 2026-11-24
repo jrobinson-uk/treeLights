@@ -59,10 +59,7 @@ KEYHOLES = True                # keyholes for hanging on two screws 50 mm apart,
 
 SEG = 64
 
-# Printing aids on the base (set either to 0 to leave it out)
-BOTTOM_CHAMFER = 0.6           # 45-degree chamfer round the bottom edge: hides "elephant's foot"
-EAR_D = 15.0                   # round discs at the corners that stop them lifting; snap off after
-EAR_H = 0.4                    # two 0.2 mm layers
+BOTTOM_CHAMFER = 0.6           # 45-degree chamfer round the base's bottom edge: hides "elephant's foot" (0 = none)
 
 # ---------------- derived positions ----------------
 
@@ -100,16 +97,12 @@ def hole_centres():
 
 
 def add_print_aids(base, w, d, r, h):
-    """Chamfer the bottom edge of a w x d base (corner radius r, height h) and add corner discs."""
+    """Chamfer the bottom edge of a w x d base (corner radius r, height h)."""
     c = BOTTOM_CHAMFER
     if c > 0:
         foot = rounded_rect(w - 2 * c, d - 2 * c, max(r - c, 0.01), c, c).extrude(0.01)
         body = rounded_rect(w, d, r).extrude(h + 2 - c).translate((0, 0, c))
         base = base ^ Manifold.batch_hull([foot, body])
-    if EAR_D > 0 and EAR_H > 0:
-        for x in (0, w):
-            for y in (0, d):
-                base += cyl(x, y, 0, EAR_H, EAR_D)
     return base
 
 

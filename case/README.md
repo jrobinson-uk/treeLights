@@ -38,14 +38,15 @@ If you're unsure, print the base first and check the board fits.
 
 ## Printing the base
 
-Both bases have printing aids built in:
+A 0.6 mm chamfer round the bottom edge of both bases hides any first-layer squash ("elephant's foot"). Set `BOTTOM_CHAMFER = 0` in `treelights_case.py` to leave it out.
 
-- **Corner discs:** 15 mm discs, 0.4 mm thick, stop the corners lifting. Don't add a brim as well. Afterwards, bend each disc up and off, then trim any leftover with a blade.
-- **Bottom chamfer:** a 0.6 mm chamfer round the bottom edge hides any first-layer squash ("elephant's foot").
+To stop the corners lifting (PLA on a Bambu Lab P1S with the Cool Plate SuperTack):
 
-To leave either out, set `EAR_D = 0` or `BOTTOM_CHAMFER = 0` in `treelights_case.py`. Both versions use these settings.
-
-For PLA: bed at 60 °C, and part-cooling fan off for the first 3 layers, rising to full by layer 5. Clean the bed with washing-up liquid or isopropyl alcohol, and keep the printer out of draughts.
+- Close the door and keep the top on.
+- In the filament profile, under **Cooling**: no cooling for the first 3 layers, full fan from layer 5, auxiliary part cooling fan at 0%, and exhaust fan off during the print.
+- Set the plate type to **Cool Plate SuperTack**, and leave the bed at that profile's temperature.
+- Wash the plate with washing-up liquid and water. Don't use glue on it.
+- If it still lifts, add a brim with **Brim-object gap: 0**.
 
 ## Features
 
