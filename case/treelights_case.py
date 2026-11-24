@@ -59,6 +59,11 @@ KEYHOLES = True                # keyholes for hanging on two screws 50 mm apart,
 
 SEG = 64
 
+# Printing aids on the base (set either to 0 to leave it out)
+BOTTOM_CHAMFER = 0.6           # 45-degree chamfer round the bottom edge: hides "elephant's foot"
+EAR_D = 15.0                   # round discs at the corners that stop them lifting; snap off after
+EAR_H = 0.4                    # two 0.2 mm layers
+
 # ---------------- derived positions ----------------
 
 IN_W, IN_D = BOARD_W + 2 * CLEAR, BOARD_H + 2 * CLEAR
@@ -94,6 +99,20 @@ def hole_centres():
     return [(BOARD_X0 + x, BOARD_Y0 + y) for x in (hx, BOARD_W - hx) for y in (hy, BOARD_H - hy)]
 
 
+def add_print_aids(base, w, d, r, h):
+    """Chamfer the bottom edge of a w x d base (corner radius r, height h) and add corner discs."""
+    c = BOTTOM_CHAMFER
+    if c > 0:
+        foot = rounded_rect(w - 2 * c, d - 2 * c, max(r - c, 0.01), c, c).extrude(0.01)
+        body = rounded_rect(w, d, r).extrude(h + 2 - c).translate((0, 0, c))
+        base = base ^ Manifold.batch_hull([foot, body])
+    if EAR_D > 0 and EAR_H > 0:
+        for x in (0, w):
+            for y in (0, d):
+                base += cyl(x, y, 0, EAR_H, EAR_D)
+    return base
+
+
 # ---------------- base ----------------
 
 def make_base():
@@ -124,7 +143,7 @@ def make_base():
             base -= cyl(kx, ky, -1, FLOOR + 2, 7.5)                      # screw head
             base -= box(kx - 1.9, ky - 10, -1, kx + 1.9, ky, FLOOR + 1)   # neck slides down
             base -= cyl(kx, ky - 10, -1, FLOOR + 2, 3.8)
-    return base
+    return add_print_aids(base, OUT_W, OUT_D, BOARD_R + CLEAR + WALL, BASE_H)
 
 
 # ---------------- lid ----------------

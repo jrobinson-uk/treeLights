@@ -15,7 +15,7 @@ import numpy as np
 import trimesh
 from manifold3d import CrossSection, JoinType, Manifold
 
-from treelights_case import tree_outline  # same engraved tree as the screw version
+from treelights_case import add_print_aids, tree_outline  # shared with the screw version
 
 # ---------------- board (from protomate-dimensions.svg) ----------------
 
@@ -142,7 +142,7 @@ def make_base():
             base -= cyl(kx, ky, -1, FLOOR + 2, 7.5)
             base -= box(kx - 1.9, ky - 10, -1, kx + 1.9, ky, FLOOR + 1)
             base -= cyl(kx, ky - 10, -1, FLOOR + 2, 3.8)
-    return base
+    return add_print_aids(base, OUT_W, OUT_D, OUT_R, WALL_TOP_Z)
 
 
 def bootsel_xy():

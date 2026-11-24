@@ -36,6 +36,17 @@ Measure these and change them at the top of `treelights_case.py` if they're diff
 
 If you're unsure, print the base first and check the board fits.
 
+## Printing the base
+
+Both bases have printing aids built in:
+
+- **Corner discs:** 15 mm discs, 0.4 mm thick, stop the corners lifting. Don't add a brim as well. Afterwards, bend each disc up and off, then trim any leftover with a blade.
+- **Bottom chamfer:** a 0.6 mm chamfer round the bottom edge hides any first-layer squash ("elephant's foot").
+
+To leave either out, set `EAR_D = 0` or `BOTTOM_CHAMFER = 0` in `treelights_case.py`. Both versions use these settings.
+
+For PLA: bed at 60 °C, and part-cooling fan off for the first 3 layers, rising to full by layer 5. Clean the bed with washing-up liquid or isopropyl alcohol, and keep the printer out of draughts.
+
 ## Features
 
 - Four 5 mm standoffs with 2.2 mm pilot holes for M2.5 thread-forming screws (about 6 mm long). For brass heat-set inserts, set `SCREW_HOLE_D = 3.6`.
