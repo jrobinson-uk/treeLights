@@ -75,7 +75,7 @@ The tree is cut right through the lid. A separate tree, `case-tree-inlay.stl`, p
 - Four 5 mm standoffs with 2.2 mm pilot holes for M2.5 thread-forming screws (about 6 mm long). For brass heat-set inserts, set `SCREW_HOLE_D = 3.6`.
 - 5 mm of room under the board for solder joints.
 - USB opening in the back wall for the micro-USB plug and its moulding. It's open at the top, and the lid closes it.
-- 7 × 5 mm slot in the front wall, in line with the spring terminal, for the lights pigtail.
+- 10 × 6 mm slot in the front wall, in line with the terminal and centred on its wire openings (7 mm above the board, `WIRE_Z`).
 - Push-fit lid with a lip (0.25 mm clearance; change `LID_FIT` if it's too tight or loose).
 - The app's tree cut through the lid, star towards the cable edge, filled with a separate inlay.
 - Two keyholes for hanging on screws 50 mm apart, with the cable edge at the top.

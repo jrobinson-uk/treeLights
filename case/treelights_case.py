@@ -53,8 +53,9 @@ BOOTSEL_TOP_Z = 23.6
 
 # Lights cable: spring terminal on the bottom row, columns 7-9 (centre column 8)
 CABLE_X = 28.63 + 7 * 2.54     # = 46.4
-CABLE_W, CABLE_H = 7.0, 5.0    # slot for the 3-wire pigtail
-CABLE_Z0 = 1.0                 # slot starts this far above the board top
+CABLE_W, CABLE_H = 10.0, 6.0  # slot for the wires: covers all three openings with room to spare
+WIRE_Z = 7.0                  # MEASURED: board top to the centre of the terminal's wire openings
+CABLE_Z0 = WIRE_Z - CABLE_H / 2   # slot starts this far above the board top (centred on the openings)
 
 KEYHOLES = True                # keyholes for hanging on two screws 50 mm apart, cable edge up
 
