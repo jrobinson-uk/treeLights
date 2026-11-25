@@ -10,3 +10,4 @@ app.bad
 app_error.txt
 update_pending
 *.new
+result.json
