@@ -61,7 +61,9 @@ The tree is cut right through the lid. A separate tree, `case-tree-inlay.stl`, p
 
 ![Inlay colours](inlay/preview.svg)
 
-`inlay/` has the same inlay split into five colours: the tree, the star, and three sets of six baubles. Load `inlay/tree-inlay-colours.3mf` into Bambu Studio, or select all five `inlay-*.stl` files and choose **Yes** when it asks to load them as one object with several parts. Then give each part a filament.
+`inlay/` has the same inlay split into five colours: the tree, the star, and three sets of six baubles. Open `inlay/tree-inlay-colours.3mf` in Bambu Studio. It's a Bambu project made by Bambu Studio itself: one object called "Tree inlay", with parts named Tree, Star, Baubles A, B and C, each on its own filament slot (1–5), set up for a P1S with PLA. The slot colours are placeholders: set them to match your AMS. Or select all five `inlay-*.stl` files, choose **Yes** when it asks to load them as one object with several parts, and give each part a filament yourself.
+
+`python3 treelights_case.py` rebuilds the 3MF through Bambu Studio's command line, if it's installed in /Applications.
 
 - The star and baubles are only 0.6 mm deep, which is three 0.2 mm layers at the face. Filament only changes for those three layers; the rest prints in the tree colour.
 - A 4-slot AMS can do four colours. For five, use the same filament for two parts, for example gold for both the star and one set of baubles. Or add a pause for a manual change.

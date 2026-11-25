@@ -300,31 +300,42 @@ def make_plunger():
     return p
 
 
-def write_3mf(path, parts):
-    """One object made of several parts (3MF components), so slicers load it as a
-    single object and let you give each part its own filament."""
-    import zipfile
-    objs, comps = [], []
-    for i, (name, tm) in enumerate(parts, 1):
-        v = "".join('<vertex x="%.4f" y="%.4f" z="%.4f"/>' % tuple(p) for p in tm.vertices)
-        t = "".join('<triangle v1="%d" v2="%d" v3="%d"/>' % tuple(f) for f in tm.faces)
-        objs.append('<object id="%d" name="%s" type="model"><mesh><vertices>%s</vertices>'
-                    '<triangles>%s</triangles></mesh></object>' % (i, name, v, t))
-        comps.append('<component objectid="%d"/>' % i)
-    top = len(parts) + 1
-    model = ('<?xml version="1.0" encoding="UTF-8"?>\n'
-             '<model unit="millimeter" xml:lang="en-US" xmlns="http://schemas.microsoft.com/3dmanufacturing/core/2015/02">'
-             '<resources>%s<object id="%d" name="tree-inlay" type="model"><components>%s</components></object></resources>'
-             '<build><item objectid="%d"/></build></model>' % ("".join(objs), top, "".join(comps), top))
-    with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as z:
-        z.writestr("[Content_Types].xml",
-                   '<?xml version="1.0" encoding="UTF-8"?>\n<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
-                   '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
-                   '<Default Extension="model" ContentType="application/vnd.ms-package.3dmanufacturing-3dmodel+xml"/></Types>')
-        z.writestr("_rels/.rels",
-                   '<?xml version="1.0" encoding="UTF-8"?>\n<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
-                   '<Relationship Target="/3D/3dmodel.model" Id="rel0" Type="http://schemas.microsoft.com/3dmanufacturing/2013/01/3dmodel"/></Relationships>')
-        z.writestr("3D/3dmodel.model", model)
+BAMBU = "/Applications/BambuStudio.app/Contents/MacOS/BambuStudio"
+BAMBU_PROFILES = "/Applications/BambuStudio.app/Contents/Resources/profiles/BBL"
+INLAY_COLOURS = ["#1F6F3A", "#F2C230", "#D62828", "#E8E8E8", "#3A6FD8"]   # starting colours only
+
+
+def bambu_3mf(stls, names, out):
+    """Have Bambu Studio assemble the STLs into one object with a part (and filament
+    slot) each, set up for a P1S with PLA, then name the parts and colour the slots."""
+    import json, shutil, subprocess, tempfile, zipfile
+    if not os.path.exists(BAMBU):
+        print("Bambu Studio not found: skipped", out)
+        return
+    fil = BAMBU_PROFILES + "/filament/Bambu PLA Basic @BBL P1S 0.4 nozzle.json"
+    tmp = tempfile.mkdtemp()
+    subprocess.run([BAMBU, "--assemble", "--arrange", "0",
+                    "--load-settings", BAMBU_PROFILES + "/machine/Bambu Lab P1S 0.4 nozzle.json;"
+                    + BAMBU_PROFILES + "/process/0.20mm Standard @BBL X1C.json",
+                    "--load-filaments", ";".join([fil] * len(stls)),
+                    "--load-filament-ids", ",".join(str(i + 1) for i in range(len(stls))),
+                    "--outputdir", tmp, "--export-3mf", "out.3mf"] + stls,
+                   check=True, capture_output=True)
+    zin = zipfile.ZipFile(os.path.join(tmp, "out.3mf"))
+    with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as zout:
+        for item in zin.infolist():
+            data = zin.read(item.filename)
+            if item.filename == "Metadata/model_settings.config":
+                t = data.decode().replace('value="Assembly"', 'value="Tree inlay"', 1)
+                for f, n in zip(stls, names):
+                    t = t.replace('key="name" value="%s"' % os.path.basename(f), 'key="name" value="%s"' % n)
+                data = t.encode()
+            elif item.filename == "Metadata/project_settings.config":
+                d = json.loads(data)
+                d["filament_colour"] = INLAY_COLOURS[:len(stls)]
+                data = json.dumps(d, indent=4).encode()
+            zout.writestr(item, data)
+    shutil.rmtree(tmp)
 
 
 def save_inlay_colours():
@@ -339,7 +350,9 @@ def save_inlay_colours():
         tm.export("inlay/inlay-%d-%s.stl" % (i, name))
         meshes.append((name, tm))
         print("inlay/inlay-%d-%s.stl  %6.1f mm3  watertight=%s" % (i, name, m.volume(), tm.is_watertight))
-    write_3mf("inlay/tree-inlay-colours.3mf", meshes)
+    stls = ["inlay/inlay-%d-%s.stl" % (i, n) for i, (n, _) in enumerate(meshes, 1)]
+    bambu_3mf(stls, ["Tree", "Star", "Baubles A", "Baubles B", "Baubles C"][:len(stls)],
+              "inlay/tree-inlay-colours.3mf")
     if dropped:
         print("left out %d bauble(s) too close to an edge" % dropped)
 
