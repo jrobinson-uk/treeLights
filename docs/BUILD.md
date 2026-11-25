@@ -10,7 +10,19 @@ Most images show the **top** of the board with the USB end at the top. The **und
 - **The bottom block.** These are the three rows of holes just above the bottom edge pads (0, 1, G, 2…). In each column, those three holes are joined. Call them **row 1** (the top one, nearest the rails), **row 2** and **row 3** (nearest the edge pads).
 - **The 5V rail.** This is the lower of the two long horizontal rows just above the bottom block, left half (columns 1 to 10). This build uses it for 5V. The rail above it isn't used.
 - **Edge pads.** Each pad along the top and bottom edges is one of the Pico's pins (0 is GP0, G is ground, VB is VBUS, the 5V from USB). They connect to nothing else unless you link them.
-- **Links (B1 to B5).** These are short bare wires on the underside joining two pads that sit next to each other. Use the legs you trim off the resistor and capacitor.
+- **Links (B1 to B5).** These are short bare wires on the underside, each joining two pads that sit next to each other. They don't go into holes. Each one lies flat on the board and is soldered onto the outside of the joints at each end (see "Making a link" below). Use the legs you trim off the resistor.
+
+## Making a link
+
+Most links join onto a pad that already has a soldered leg in it, so there's no room in the hole for anything else. You don't need any. A link lies flat on the board and is soldered onto the outside of the joint:
+
+1. **Shape it.** Cut a piece of trimmed resistor leg about 5 mm long, enough to reach from the middle of one pad to the middle of the next. Bend the ends down slightly if it helps it sit flat.
+2. **Tin it.** Melt a little solder onto the wire.
+3. **Join the first end.** Hold the wire against the side of the first joint with tweezers. Touch the iron to the joint until its solder melts and the wire sinks into it. Take the iron away and keep the wire still for a couple of seconds.
+4. **Join the other end.** Do the same at the second pad. If that pad's hole is empty, solder the wire to the pad's copper ring, or poke the end into the hole first if that's easier.
+5. **Check.** Each end should be a smooth, shiny joint that has flowed onto the pad. Tug the wire gently with tweezers: it shouldn't move. It also mustn't touch any other pad.
+
+On this board, neighbouring pads are close enough (2.54 mm apart) that a large blob of solder can bridge them. That works in a pinch, but it's easy to bridge a third pad by accident, and a blob can crack. A piece of wire is more reliable.
 
 ## What you need
 
@@ -62,9 +74,9 @@ This takes the 5V from the Pico's USB socket (the **VB** pad) to the 5V rail.
 Turn the board over. Column 1 is now on the **right**, next to the Pico sockets.
 
 1. Solder both ends of the VB wire and both resistor legs.
-2. **B1 (data from the Pico):** bend the resistor's column 1 leg down onto the **0** pad just below it, solder it, then trim it.
-3. Trim the other resistor leg and keep it.
-4. **B2 (ground for the capacitor):** use the trimmed leg as a short link from the **G** pad below column 3 up to the column 3, row 3 pad. Solder both ends.
+2. **B1 (data from the Pico):** bend the resistor's column 1 leg flat, down onto the **0** pad just below it, and solder it there. Trim off the rest of the leg and **keep the piece**.
+3. **Leave the column 5 leg long.** Bend it flat against the board, pointing towards column 6. It becomes link B3 in step 5.
+4. **B2 (ground for the capacitor):** make a link from the piece you kept: from the **G** pad below column 3 up to the column 3, row 3 pad. Both of those holes are empty, so you can solder to the pads or poke the ends in.
 
 **Check:** the **0** pad beeps to the resistor's column 1 leg, and the **G** pad beeps to column 3, row 1.
 
@@ -88,9 +100,10 @@ Viewed from the front, the contacts are **D (data) · + (5V) · G (ground)**, le
 
 1. Solder **one front leg** first, then check the terminal is still flat. If it isn't, reheat that joint and press the terminal down.
 2. Solder the other five legs.
-3. **B3 (data to the terminal):** link the resistor's **column 5, row 3** joint to the terminal's **column 6, row 3** leg, right next to it.
-4. **B4 (5V to the terminal):** link the terminal's **column 7, row 1** leg to the **5V rail** pad just above it.
-5. **B5 (ground to the terminal):** link the terminal's **column 8, row 3** leg to the **G** pad just below it.
+3. Now make the three links. Each one lies flat and is soldered onto the outside of the joints, as in "Making a link". Leave the terminal's leg ends as they are: the bit sticking out gives the link wire something to sit against.
+4. **B3 (data to the terminal):** take the resistor's column 5 leg, which you left long, and lay it across to the terminal's **column 6, row 3** joint next to it. Melt that joint so the leg sinks into it, then trim off the spare.
+5. **B4 (5V to the terminal):** a short piece of wire from the terminal's **column 7, row 1** joint to the **5V rail** pad just above it. The rail's hole is empty, so you can poke that end in.
+6. **B5 (ground to the terminal):** a short piece of wire from the terminal's **column 8, row 3** joint to the **G** pad just below it. That hole is empty too.
 
 **Watch for solder bridges:**
 - The back legs in columns 6 and 8 sit right next to 5V rail pads. A bridge there would short data or ground to 5V.
