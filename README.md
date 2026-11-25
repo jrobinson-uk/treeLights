@@ -4,7 +4,7 @@ A Raspberry Pi Pico W drives a string of 200 WS2811 LEDs. Tap the tree on a web 
 
 This replaces the original Raspberry Pi and Flask version, which is still in this repo's history. The colours and their order are the same as before.
 
-![Board layout on the ProtoMate for Pico](docs/protomate-layout.png)
+![The finished board on a ProtoMate for Pico](docs/build/step-8-done.svg)
 
 ## Wiring
 
@@ -18,7 +18,7 @@ The string's input end connects to the Pico. The Pico passes USB power through t
 
 - Put a 1000 µF capacitor across 5V and GND, with the stripe to GND.
 - Power the Pico from a 5V USB charger rated 2–3 A, not a laptop port.
-- [docs/protomate-layout.png](docs/protomate-layout.png) shows a soldered build on a ProtoMate for Pico, with a 3-pin terminal for the string's pigtail.
+- [docs/BUILD.md](docs/BUILD.md) is a step-by-step soldering guide for a ProtoMate for Pico, with a 3-way lever terminal for the string's pigtail. `docs/make_build_guide.py` draws its images, and `docs/make_build_page.py` turns it into `docs/build-guide.html`.
 
 ## Install
 

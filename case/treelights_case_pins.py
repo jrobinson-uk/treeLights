@@ -66,7 +66,7 @@ USB_W, USB_H = 12.0, 8.0
 BOOTSEL_FROM_TOP = 12.0      # MEASURE: Pico USB end to button centre
 BOOTSEL_FROM_CENTRE = -4.5   # Pico centre line to button centre (was -1; first print 3-4 mm out)
 
-CABLE_X = 28.63 + 7 * 2.54   # spring terminal, centre column 8
+CABLE_X = 28.63 + 6 * 2.54   # terminal in columns 6-8 (docs/BUILD.md); middle contact, column 7
 CABLE_W, CABLE_H = 10.0, 6.0  # slot for the wires: covers all three openings with room to spare
 WIRE_Z = 7.0                  # MEASURED: board top to the centre of the terminal's wire openings
 TERMINAL_W = 17.0            # width of the 3-way lever terminal

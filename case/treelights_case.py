@@ -52,7 +52,7 @@ BOOTSEL_FROM_CENTRE = -4.5    # was -1; the first print was 3-4 mm out
 BOOTSEL_TOP_Z = 23.6
 
 # Lights cable: spring terminal on the bottom row, columns 7-9 (centre column 8)
-CABLE_X = 28.63 + 7 * 2.54     # = 46.4
+CABLE_X = 28.63 + 6 * 2.54     # terminal in columns 6-8 (docs/BUILD.md); middle contact, column 7
 CABLE_W, CABLE_H = 10.0, 6.0  # slot for the wires: covers all three openings with room to spare
 WIRE_Z = 7.0                  # MEASURED: board top to the centre of the terminal's wire openings
 CABLE_Z0 = WIRE_Z - CABLE_H / 2   # slot starts this far above the board top (centred on the openings)
