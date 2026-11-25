@@ -9,6 +9,7 @@ Board measurements come from protomate-dimensions.svg.
 """
 
 import math
+import os
 
 import numpy as np
 import trimesh
@@ -65,6 +66,11 @@ SEG = 64
 INLAY_FACE = 1.2               # straight part at the lid's face
 INLAY_FLARE = 0.8              # then widens at 45 degrees by this much, so it can't push through
 INLAY_FIT = 0.12               # gap each side; raise if it's too tight, lower if it falls out
+# Multi-colour inlay: the star and baubles are separate parts in the face,
+# this deep, so filament only changes for the first few layers.
+COLOUR_DEPTH = 0.6             # three 0.2 mm layers
+BAUBLE_D = 2.6                 # the app's baubles, scaled to the inlay
+BAUBLE_COLOURS = 3             # baubles cycle through this many colours
 
 BOTTOM_CHAMFER = 0.6           # 45-degree chamfer round the base's bottom edge: hides "elephant's foot" (0 = none)
 
@@ -148,25 +154,36 @@ def make_base():
 
 # ---------------- lid ----------------
 
+TREE_S = 0.13                  # app tree units to mm
+
+
+def tree_star():
+    star = []
+    for i in range(10):
+        a = math.pi / 2 + i * math.pi / 5
+        r = 24 if i % 2 == 0 else 10     # bigger than the app's star (16/7) so it prints
+        star.append(((150 + r * math.cos(a)) * TREE_S, (-30 + r * math.sin(a)) * TREE_S))
+    return CrossSection([star])
+
+
+# Bauble positions from the app's tree picture (index.html), same order
+BAUBLES = [(150, 58), (130, 94), (170, 98), (112, 120), (150, 124), (190, 118),
+           (124, 152), (172, 160), (96, 184), (140, 190), (186, 194), (222, 200), (78, 204),
+           (112, 240), (194, 236), (150, 250), (72, 270), (130, 268), (176, 276), (234, 272),
+           (100, 294), (150, 300), (204, 298)]
+
+
 def tree_outline():
     """The app's tree: three tiers and a star, about 34 mm tall, in lid coordinates."""
-    s = 0.13
+    s = TREE_S
     tiers = [((150, 140), (28, 288), (272, 288)),
              ((150, 72), (58, 204), (242, 204)),
              ((150, 22), (90, 124), (210, 124))]
     polys = [[(x * s, -y * s) for x, y in t] for t in tiers]
     polys.append([(x * s, -y * s) for x, y in ((133, 290), (167, 290), (167, 334), (133, 334))])
-    star = []
-    for i in range(10):
-        a = math.pi / 2 + i * math.pi / 5
-        r = 16 if i % 2 == 0 else 7
-        star.append(((150 + r * math.cos(a)) * s, (-24 + r * math.sin(a)) * s))
-    polys.append(star)
-    cs = CrossSection()
+    cs = tree_star()
     for p in polys:
         cs += CrossSection([p])
-    # Stem joining the star to the top tier, so the inlay is one piece
-    cs += CrossSection.square((1.6, 3.0)).translate((150 * s - 0.8, -40 * s))
     return cs
 
 
@@ -201,6 +218,47 @@ def make_inlay():
     tree = placed_tree(OUT_D)
     b = tree.bounds()
     return flared(tree.translate((-b[0], -b[1])), INLAY_FIT, LID_T - 0.01).translate((0, 0, 0.01))
+
+
+def make_inlay_parts():
+    """The inlay split by colour: {name: part}. Same outside shape as make_inlay()."""
+    raw = tree_outline()
+    rb = raw.bounds()
+    shift = lambda cs: cs.translate((-rb[0], -rb[1]))
+    whole = make_inlay()
+    face = shift(raw).offset(-INLAY_FIT, JoinType.Miter, 2.0)
+    # Oversized, then trimmed by the inlay itself, so the star's points come from one outline
+    star = shift(tree_star()).offset(0.4, JoinType.Round, circular_segments=SEG)
+    zb = whole.bounding_box()[2]          # the inlay's face, so colours start right at it
+    tiers_only = shift(raw - tree_star())          # keep the yellow off the top tier
+    parts = {"star": (star.extrude(COLOUR_DEPTH).translate((0, 0, zb)) ^ whole)
+             - tiers_only.extrude(COLOUR_DEPTH + 1).translate((0, 0, zb - 0.5))}
+    keep_in = face.offset(-0.3, JoinType.Round, circular_segments=SEG) - star.offset(0.4, JoinType.Round, circular_segments=SEG)
+    groups = [CrossSection() for _ in range(BAUBLE_COLOURS)]
+    dropped = kept = 0
+    placed = CrossSection()
+    # Nudge offsets to try, nearest first: the app draws baubles overhanging the tiers
+    nudges = sorted(((dx * 0.2, dy * 0.2) for dx in range(-8, 9) for dy in range(-8, 9)),
+                    key=lambda d: d[0] ** 2 + d[1] ** 2)
+    for x, y in BAUBLES:
+        for dx, dy in nudges:
+            disc = CrossSection.circle(BAUBLE_D / 2, SEG).translate((x * TREE_S - rb[0] + dx, -y * TREE_S - rb[1] + dy))
+            if (disc - keep_in).area() < 1e-3 and (disc.offset(0.6, JoinType.Round, circular_segments=SEG) ^ placed).area() < 1e-3:
+                break
+        else:
+            dropped += 1            # no room for it
+            continue
+        placed += disc
+        groups[kept % BAUBLE_COLOURS] += disc
+        kept += 1
+    for k, g in enumerate(groups):
+        parts["bauble-%s" % "abcde"[k]] = g.extrude(COLOUR_DEPTH).translate((0, 0, zb))
+    coloured = Manifold()
+    for m in parts.values():
+        coloured += m
+    coloured += coloured.translate((0, 0, -0.2))   # reach below the face so the cut is clean
+    parts = {"tree": whole - coloured, **parts}
+    return parts, dropped
 
 
 def bootsel_xy():
@@ -242,6 +300,26 @@ def make_plunger():
     return p
 
 
+def save_inlay_colours():
+    """One STL per colour in inlay/, plus inlay/tree-inlay-colours.3mf with all of them as parts."""
+    parts, dropped = make_inlay_parts()
+    os.makedirs("inlay", exist_ok=True)
+    scene = trimesh.Scene()
+    for i, (name, m) in enumerate(parts.items(), 1):
+        mesh = m.to_mesh()
+        tm = trimesh.Trimesh(vertices=np.array(mesh.vert_properties)[:, :3], faces=np.array(mesh.tri_verts))
+        tm.merge_vertices()
+        tm.export("inlay/inlay-%d-%s.stl" % (i, name))
+        scene.add_geometry(tm, geom_name=name, node_name=name)
+        print("inlay/inlay-%d-%s.stl  %6.1f mm3  watertight=%s" % (i, name, m.volume(), tm.is_watertight))
+    try:
+        scene.export("inlay/tree-inlay-colours.3mf")
+    except Exception as e:
+        print("3MF export skipped:", e)
+    if dropped:
+        print("left out %d bauble(s) too close to an edge" % dropped)
+
+
 def save(m, name):
     mesh = m.to_mesh()
     tm = trimesh.Trimesh(vertices=np.array(mesh.vert_properties)[:, :3], faces=np.array(mesh.tri_verts))
@@ -255,3 +333,4 @@ if __name__ == "__main__":
     save(make_lid(), "case-lid.stl")
     save(make_plunger(), "case-plunger.stl")
     save(make_inlay(), "case-tree-inlay.stl")   # fits both versions' lids
+    save_inlay_colours()

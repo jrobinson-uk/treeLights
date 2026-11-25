@@ -57,6 +57,17 @@ The tree is cut right through the lid. A separate tree, `case-tree-inlay.stl`, p
 - The front 1.2 mm of the inlay is straight. Behind that, it widens at 45° by 0.8 mm, so it can't push out through the front. It sits flush on both sides.
 - The gap is 0.12 mm each side (`INLAY_FIT`). If it's too tight, raise it to 0.15–0.2. If it's loose, add a dab of superglue from the inside.
 
+### Multi-colour inlay
+
+![Inlay colours](inlay/preview.svg)
+
+`inlay/` has the same inlay split into five colours: the tree, the star, and three sets of six baubles. Load `inlay/tree-inlay-colours.3mf` into Bambu Studio, or select all five `inlay-*.stl` files and choose **Yes** when it asks to load them as one object with several parts. Then give each part a filament.
+
+- The star and baubles are only 0.6 mm deep, which is three 0.2 mm layers at the face. Filament only changes for those three layers; the rest prints in the tree colour.
+- A 4-slot AMS can do four colours. For five, use the same filament for two parts, for example gold for both the star and one set of baubles. Or add a pause for a manual change.
+- The baubles are the ones from the web app's tree picture. Some are nudged inward to stay off the edges, and five that hang off the tiers in the app are left out. Change `BAUBLE_D`, `BAUBLE_COLOURS` (up to 5) or `COLOUR_DEPTH` in `treelights_case.py` and rebuild.
+- The star is bigger than in the app (about 6 mm across) so its points print.
+
 ## Features
 
 - Four 5 mm standoffs with 2.2 mm pilot holes for M2.5 thread-forming screws (about 6 mm long). For brass heat-set inserts, set `SCREW_HOLE_D = 3.6`.
