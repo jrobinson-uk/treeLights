@@ -300,22 +300,46 @@ def make_plunger():
     return p
 
 
+def write_3mf(path, parts):
+    """One object made of several parts (3MF components), so slicers load it as a
+    single object and let you give each part its own filament."""
+    import zipfile
+    objs, comps = [], []
+    for i, (name, tm) in enumerate(parts, 1):
+        v = "".join('<vertex x="%.4f" y="%.4f" z="%.4f"/>' % tuple(p) for p in tm.vertices)
+        t = "".join('<triangle v1="%d" v2="%d" v3="%d"/>' % tuple(f) for f in tm.faces)
+        objs.append('<object id="%d" name="%s" type="model"><mesh><vertices>%s</vertices>'
+                    '<triangles>%s</triangles></mesh></object>' % (i, name, v, t))
+        comps.append('<component objectid="%d"/>' % i)
+    top = len(parts) + 1
+    model = ('<?xml version="1.0" encoding="UTF-8"?>\n'
+             '<model unit="millimeter" xml:lang="en-US" xmlns="http://schemas.microsoft.com/3dmanufacturing/core/2015/02">'
+             '<resources>%s<object id="%d" name="tree-inlay" type="model"><components>%s</components></object></resources>'
+             '<build><item objectid="%d"/></build></model>' % ("".join(objs), top, "".join(comps), top))
+    with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as z:
+        z.writestr("[Content_Types].xml",
+                   '<?xml version="1.0" encoding="UTF-8"?>\n<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
+                   '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
+                   '<Default Extension="model" ContentType="application/vnd.ms-package.3dmanufacturing-3dmodel+xml"/></Types>')
+        z.writestr("_rels/.rels",
+                   '<?xml version="1.0" encoding="UTF-8"?>\n<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+                   '<Relationship Target="/3D/3dmodel.model" Id="rel0" Type="http://schemas.microsoft.com/3dmanufacturing/2013/01/3dmodel"/></Relationships>')
+        z.writestr("3D/3dmodel.model", model)
+
+
 def save_inlay_colours():
     """One STL per colour in inlay/, plus inlay/tree-inlay-colours.3mf with all of them as parts."""
     parts, dropped = make_inlay_parts()
     os.makedirs("inlay", exist_ok=True)
-    scene = trimesh.Scene()
+    meshes = []
     for i, (name, m) in enumerate(parts.items(), 1):
         mesh = m.to_mesh()
         tm = trimesh.Trimesh(vertices=np.array(mesh.vert_properties)[:, :3], faces=np.array(mesh.tri_verts))
         tm.merge_vertices()
         tm.export("inlay/inlay-%d-%s.stl" % (i, name))
-        scene.add_geometry(tm, geom_name=name, node_name=name)
+        meshes.append((name, tm))
         print("inlay/inlay-%d-%s.stl  %6.1f mm3  watertight=%s" % (i, name, m.volume(), tm.is_watertight))
-    try:
-        scene.export("inlay/tree-inlay-colours.3mf")
-    except Exception as e:
-        print("3MF export skipped:", e)
+    write_3mf("inlay/tree-inlay-colours.3mf", meshes)
     if dropped:
         print("left out %d bauble(s) too close to an edge" % dropped)
 
