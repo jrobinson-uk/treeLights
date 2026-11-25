@@ -47,7 +47,7 @@ USB_W, USB_H = 12.0, 8.0       # opening for the micro-USB plug and its overmoul
 # Distance from the Pico's USB-end edge to the button centre, and from the
 # Pico's centre line (positive = towards the proto area).
 BOOTSEL_FROM_TOP = 12.0
-BOOTSEL_FROM_CENTRE = -1.0
+BOOTSEL_FROM_CENTRE = -4.5    # was -1; the first print was 3-4 mm out
 BOOTSEL_TOP_Z = 23.6
 
 # Lights cable: spring terminal on the bottom row, columns 7-9 (centre column 8)
@@ -58,6 +58,13 @@ CABLE_Z0 = 1.0                 # slot starts this far above the board top
 KEYHOLES = True                # keyholes for hanging on two screws 50 mm apart, cable edge up
 
 SEG = 64
+
+# Tree inlay: the tree is cut right through the lid, and a separate tree
+# (case-tree-inlay.stl, ideally another colour) pushes in from behind.
+# Both print face down, so both faces come out smooth.
+INLAY_FACE = 1.2               # straight part at the lid's face
+INLAY_FLARE = 0.8              # then widens at 45 degrees by this much, so it can't push through
+INLAY_FIT = 0.12               # gap each side; raise if it's too tight, lower if it falls out
 
 BOTTOM_CHAMFER = 0.6           # 45-degree chamfer round the base's bottom edge: hides "elephant's foot" (0 = none)
 
@@ -158,7 +165,42 @@ def tree_outline():
     cs = CrossSection()
     for p in polys:
         cs += CrossSection([p])
+    # Stem joining the star to the top tier, so the inlay is one piece
+    cs += CrossSection.square((1.6, 3.0)).translate((150 * s - 0.8, -40 * s))
     return cs
+
+
+def placed_tree(out_d):
+    """The tree outline centred over the proto area, in lid (printing) coordinates."""
+    tree = tree_outline()
+    b = tree.bounds()
+    cx = BOARD_X0 + 30 + (BOARD_W - 30) / 2
+    return tree.translate((cx - (b[0] + b[2]) / 2, out_d / 2 - (b[1] + b[3]) / 2))
+
+
+def flared(cs, inset, height):
+    """cs extruded from z=0: straight for INLAY_FACE, then widening by INLAY_FLARE at 45 degrees."""
+    def ring(off, z0, h):
+        o = cs.offset(off, JoinType.Miter, 2.0) if abs(off) > 1e-6 else cs
+        return o.extrude(h).translate((0, 0, z0))
+    m = ring(-inset, -0.01, INLAY_FACE + 0.01)
+    steps = 8
+    dz = (height - INLAY_FACE) / steps
+    for i in range(steps):
+        off = INLAY_FLARE * (i + 1) / steps - inset
+        m += ring(off, INLAY_FACE + i * dz - 0.005, dz + 0.01)   # slices overlap so they join
+    return m
+
+
+def tree_hole(out_d):
+    return flared(placed_tree(out_d), 0.0, LID_T)
+
+
+def make_inlay():
+    """Printed face down. Push it into the lid from the inside; a dab of glue if it's loose."""
+    tree = placed_tree(OUT_D)
+    b = tree.bounds()
+    return flared(tree.translate((-b[0], -b[1])), INLAY_FIT, LID_T - 0.01).translate((0, 0, 0.01))
 
 
 def bootsel_xy():
@@ -178,16 +220,10 @@ def make_lid():
     lid -= box(ux - USB_W / 2 - 1, 0, LID_T,
                ux + USB_W / 2 + 1, WALL + LID_FIT + LID_LIP_T + 1, LID_T + LID_LIP + 1)
 
-    # Engraved tree on the top face, centred over the proto area. The lid prints
-    # face down, so as printed the star points to the back; assembled, it points
-    # to the cable edge, which is the top when the case hangs from its keyholes.
-    tree = tree_outline()
-    bx = tree.bounds()
-    tw, th = bx[2] - bx[0], bx[3] - bx[1]
-    cx = BOARD_X0 + 30 + (BOARD_W - 30) / 2
-    cy = OUT_D / 2
-    tree = tree.translate((cx - (bx[0] + tw / 2), cy - (bx[1] + th / 2)))
-    lid -= tree.extrude(1.0).translate((0, 0, -0.01))
+    # Tree hole for the inlay, over the proto area. The lid prints face down,
+    # so as printed the star points to the back; assembled, it points to the
+    # cable edge, which is the top when the case hangs from its keyholes.
+    lid -= tree_hole(OUT_D)
 
     # BOOTSEL plunger hole (lid is printed upside down, so mirror y)
     bx_, by_ = bootsel_xy()
@@ -218,3 +254,4 @@ if __name__ == "__main__":
     save(make_base(), "case-base.stl")
     save(make_lid(), "case-lid.stl")
     save(make_plunger(), "case-plunger.stl")
+    save(make_inlay(), "case-tree-inlay.stl")   # fits both versions' lids

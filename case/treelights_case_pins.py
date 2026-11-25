@@ -15,7 +15,7 @@ import numpy as np
 import trimesh
 from manifold3d import CrossSection, JoinType, Manifold
 
-from treelights_case import add_print_aids, tree_outline  # shared with the screw version
+from treelights_case import add_print_aids, tree_hole  # shared with the screw version
 
 # ---------------- board (from protomate-dimensions.svg) ----------------
 
@@ -64,7 +64,7 @@ PICO_TOP_Y = 3.96        # Pico's USB-end edge, measured down from the USB edge 
 USB_W, USB_H = 12.0, 8.0
 
 BOOTSEL_FROM_TOP = 12.0      # MEASURE: Pico USB end to button centre
-BOOTSEL_FROM_CENTRE = -1.0   # MEASURE: Pico centre line to button centre
+BOOTSEL_FROM_CENTRE = -4.5   # Pico centre line to button centre (was -1; first print 3-4 mm out)
 
 CABLE_X = 28.63 + 7 * 2.54   # spring terminal, centre column 8
 CABLE_W, CABLE_H = 7.0, 5.0
@@ -176,12 +176,8 @@ def make_lid():
         lid += cyl(x, flip(y), LID_T - 0.01, post_len + 0.01, POST_OD)
         lid -= cyl(x, flip(y), LID_T + post_len - (PIN_ABOVE_BOARD + 0.8), PIN_ABOVE_BOARD + 1.6, POST_ID)
 
-    # Engraved tree on the top face over the proto area, star towards the cable edge
-    tree = tree_outline()
-    b = tree.bounds()
-    cx = BOARD_X0 + 30 + (BOARD_W - 30) / 2
-    tree = tree.translate((cx - (b[0] + b[2]) / 2, OUT_D / 2 - (b[1] + b[3]) / 2))
-    lid -= tree.extrude(1.0).translate((0, 0, -0.01))
+    # Tree hole for the inlay (case-tree-inlay.stl), star towards the cable edge
+    lid -= tree_hole(OUT_D)
 
     bx, by = bootsel_xy()
     lid -= cyl(bx, flip(by), -1, LID_T + 2, 5.0)
