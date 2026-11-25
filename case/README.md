@@ -14,7 +14,8 @@ All heights are worked out from the stack settings at the top of `treelights_cas
 - **Pins:** 2.45 mm on one diagonal (they locate the board) and 2.30 mm on the other (they allow for print error), on 4.5 mm shoulders 3 mm tall. The ProtoMate's holes are taken as 2.7 mm: measure yours and print a base to test the fit before the lid.
 - **Lid posts:** hollow so they slip over the pin tips and press on the board's corners. If the lid won't close, raise `POST_GAP`.
 - **Under the board:** 3 mm. Trim the pins under the board flush.
-- **Tallest part:** set to 10 mm above the board, for the spring terminal or the 1000 µF capacitor lying flat. Measure yours.
+- **As built:** the Pico plugs into sockets (11 mm above the board), and its header pins stick out 2.5 mm above it. The lever terminal is 13 mm tall with its levers closed. The lid's underside is 22.6 mm up, and the whole case is 24.6 mm tall. These were measured from a photo, so check them with calipers if you can.
+- **Lid lip:** notched over the terminal and at the USB end.
 
 ## Screwed version
 

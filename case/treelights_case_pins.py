@@ -27,12 +27,13 @@ HOLE_DX, HOLE_DY = 78.0, 50.15
 
 FLOOR = 2.0
 SHOULDER_H = 3.0         # room under the board for solder joints (trim pins flush)
-PICO_GAP = 2.5           # board top to Pico underside: 2.5 = Pico soldered on its
-                         # header pins; about 11 if it plugs into 8.5 mm sockets
+PICO_GAP = 11.0          # board top to Pico underside: 11 = Pico in 8.5 mm sockets
+                         # (as built); 2.5 if it's soldered straight onto the board
 PICO_T = 1.0
 BOOTSEL_H = 3.0          # button top above the Pico's top surface
-TALLEST_PART = 10.0      # tallest part on the board above its top surface
-                         # (spring terminal, or the 1000 uF capacitor lying flat)
+PICO_PINS_ABOVE = 2.5    # header pin tips sticking out of the Pico's top surface
+TALLEST_PART = 13.0      # tallest part on the board above its top surface
+                         # (the lever terminal, levers closed: about 13 mm)
 HEADROOM = 1.0           # space left under the lid
 LID_T = 2.0
 
@@ -67,6 +68,7 @@ BOOTSEL_FROM_CENTRE = -1.0   # MEASURE: Pico centre line to button centre
 
 CABLE_X = 28.63 + 7 * 2.54   # spring terminal, centre column 8
 CABLE_W, CABLE_H = 7.0, 5.0
+TERMINAL_W = 17.0            # width of the 3-way lever terminal
 CABLE_Z0 = 1.0               # slot starts this far above the board top
 
 KEYHOLES = True
@@ -78,7 +80,8 @@ BOARD_BOTTOM_Z = FLOOR + SHOULDER_H
 BOARD_TOP_Z = BOARD_BOTTOM_Z + BOARD_T
 PICO_TOP_Z = BOARD_TOP_Z + PICO_GAP + PICO_T
 BOOTSEL_TOP_Z = PICO_TOP_Z + BOOTSEL_H
-CONTENT_TOP_Z = max(BOARD_TOP_Z + TALLEST_PART, BOOTSEL_TOP_Z, BOARD_TOP_Z + PIN_ABOVE_BOARD)
+CONTENT_TOP_Z = max(BOARD_TOP_Z + TALLEST_PART, BOOTSEL_TOP_Z, PICO_TOP_Z + PICO_PINS_ABOVE,
+                    BOARD_TOP_Z + PIN_ABOVE_BOARD)
 WALL_TOP_Z = CONTENT_TOP_Z + HEADROOM          # underside of the lid
 TOTAL_H = WALL_TOP_Z + LID_T
 
@@ -161,6 +164,11 @@ def make_lid():
     # No lip across the USB opening
     ux, _ = sheet_to_case(PICO_X, 0)
     lid -= box(ux - USB_W / 2 - 1, 0, LID_T, ux + USB_W / 2 + 1, WALL + LID_FIT + LID_LIP_T + 1, LID_T + LID_LIP + 1)
+
+    # ...or over the lever terminal at the cable edge (it reaches the lip's depth)
+    cx, _ = sheet_to_case(CABLE_X, 0)
+    lid -= box(cx - TERMINAL_W / 2 - 1, OUT_D - (WALL + LID_FIT + LID_LIP_T + 1), LID_T,
+               cx + TERMINAL_W / 2 + 1, OUT_D + 1, LID_T + LID_LIP + 1)
 
     # Hold-down posts: from the lid's underside down to the board's top surface
     post_len = WALL_TOP_Z - BOARD_TOP_Z - POST_GAP
