@@ -73,7 +73,7 @@ COLOUR_DEPTH = 0.6             # three 0.2 mm layers
 BAUBLE_D = 2.6                 # the app's baubles, scaled to the inlay
 BAUBLE_COLOURS = 3             # baubles cycle through this many colours
 
-BOTTOM_CHAMFER = 0.6           # 45-degree chamfer round the base's bottom edge: hides "elephant's foot" (0 = none)
+BOTTOM_CHAMFER = 0.0           # 45-degree chamfer round the base's bottom edge, in mm (0 = square edge)
 
 # ---------------- derived positions ----------------
 

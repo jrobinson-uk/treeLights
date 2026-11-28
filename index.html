@@ -21,7 +21,9 @@ h1{font-size:22px;font-weight:600;margin:0 0 4px}
 #tree:active{transform:scale(.98)}
 #tree:focus:not(:focus-visible){outline:none}
 .state{text-align:center;font-size:18px;font-weight:600;margin:4px 0 0}
-.hint{text-align:center;color:var(--muted);font-size:13px;margin:0 0 20px}
+.hint{text-align:center;color:var(--muted);font-size:13px;margin:0 0 12px}
+.lockrow{text-align:center;margin:0 0 20px}
+.btn.lock[aria-pressed="true"]{background:var(--accent);color:#fff;border-color:transparent}
 .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:4px 16px}
 .row{display:flex;justify-content:space-between;align-items:center;padding:12px 0;gap:12px}
 .row+.row{border-top:1px solid var(--line)}
@@ -84,6 +86,7 @@ details[open] summary::after{content:"Done"}
 </svg>
 <p class="state" id="state">&nbsp;</p>
 <p class="hint" id="hint">Tap the tree</p>
+<p class="lockrow"><button class="btn secondary lock" id="lock" aria-pressed="false">&#128275; Button unlocked</button></p>
 
 <div class="card">
   <div class="row"><label for="bri"><b>Brightness</b></label>
@@ -128,7 +131,8 @@ function paint(){var on=S.on,k=0.35+0.65*Math.min(1,(+$('bri').value)/100);
   [].forEach.call(g.children,function(c,i){c.setAttribute('fill',on?dim(toScreen(C[i%C.length]),k):getComputedStyle(document.documentElement).getPropertyValue('--off'))})}
 function render(s){S=s;var on=s.on;
   $('tree').classList.toggle('lit',on);
-  $('state').textContent=on?'On':'Off';$('hint').textContent=on?'Tap the tree to switch off':'Tap the tree to switch on';
+  $('state').textContent=on?'On':'Off';$('hint').textContent=(on?'Tap the tree to switch off':'Tap the tree to switch on')+(s.locked?' · Button on the tree is locked':'');
+  $('lock').setAttribute('aria-pressed',!!s.locked);$('lock').innerHTML=s.locked?'&#128274; Button locked':'&#128275; Button unlocked';
   var sc=s.schedule;$('sw').setAttribute('aria-checked',sc.enabled);$('times').classList.toggle('dim',!sc.enabled);
   if(document.activeElement!==$('on'))$('on').value=sc.on;
   if(document.activeElement!==$('off'))$('off').value=sc.off;
@@ -144,6 +148,7 @@ function api(path,body){return fetch(path,body?{method:'POST',headers:{'Content-
 function toggle(){if(!S.schedule)return;render(Object.assign({},S,{on:!S.on}));api('/api/state',{on:S.on})}
 $('tree').addEventListener('click',toggle);
 $('tree').addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();toggle()}});
+$('lock').addEventListener('click',function(){if(!S.schedule)return;var l=!S.locked;render(Object.assign({},S,{locked:l}));api('/api/lock',{locked:l})});
 $('sw').addEventListener('click',function(){if(S.schedule)api('/api/schedule',{enabled:!S.schedule.enabled})});
 // Brightness: send while dragging (at most every 300ms) and on release.
 var dragging=false,briTimer=null,briSent=null;
@@ -186,7 +191,7 @@ $('resetc').addEventListener('click',function(){if(!confirm('Go back to the orig
   api('/api/colours',{reset:true})});
 drawCols();
 ['on','off'].forEach(function(k){$(k).addEventListener('change',function(){var b={};b[k]=$(k).value;api('/api/schedule',b)})});
-api('/api/state');setInterval(function(){if(!document.hidden)api('/api/state')},10000);
+api('/api/state');setInterval(function(){if(!document.hidden)api('/api/state')},2000);
 document.addEventListener('visibilitychange',function(){if(!document.hidden)api('/api/state')});
 </script>
 </body>

@@ -72,7 +72,7 @@ MAX_COLOURS = 24
 # 1.75A). Brighter custom colours lower the top of the brightness slider.
 POWER_BUDGET = 11100
 
-state = {"on": True, "brightness": 100, "colours": None,
+state = {"on": True, "brightness": 100, "colours": None, "locked": False,
          "schedule": {"enabled": False, "on": "16:00", "off": "23:00"}}
 clock_ok = False
 
@@ -124,6 +124,7 @@ def load_state():
         with open(STATE_FILE) as f:
             saved = json.load(f)
         state["on"] = bool(saved.get("on", True))
+        state["locked"] = bool(saved.get("locked", False))
         if check_colours(saved.get("colours")) is None:
             state["colours"] = saved["colours"]
         state["brightness"] = clamp_brightness(saved.get("brightness", 100))
@@ -144,6 +145,12 @@ def set_on(on):
     if state["on"] != on:
         state["on"] = on
         apply_lights()
+        save_state()
+
+
+def set_locked(locked):
+    if state["locked"] != locked:
+        state["locked"] = locked
         save_state()
 
 
@@ -233,6 +240,7 @@ def next_event_text():
 def public_state():
     return {
         "on": state["on"],
+        "locked": state["locked"],
         "brightness": shown_brightness(),
         "brightness_range": [BRIGHTNESS_MIN, brightness_max()],
         "colours": [as_seen(c) for c in pattern()],
@@ -249,7 +257,16 @@ def public_state():
 async def button_task():
     while True:
         if rp2.bootsel_button():
-            set_on(not state["on"])
+            if state["locked"]:
+                # Locked from the app: leave the lights alone, blink the
+                # Pico's LED twice so it's clearly locked rather than broken.
+                for _ in range(2):
+                    status_led.value(0 if state["on"] else 1)
+                    await asyncio.sleep_ms(150)
+                    status_led.value(1 if state["on"] else 0)
+                    await asyncio.sleep_ms(150)
+            else:
+                set_on(not state["on"])
             while rp2.bootsel_button():
                 await asyncio.sleep_ms(10)
             await asyncio.sleep_ms(50)
@@ -658,6 +675,10 @@ async def handle(reader, writer):
                 set_on(bool(body["on"]))
             if method == "POST" and "brightness" in body:
                 set_brightness(body["brightness"])
+            _send_json(writer, public_state())
+        elif path == "/api/lock" and method == "POST":
+            if "locked" in body:
+                set_locked(bool(body["locked"]))
             _send_json(writer, public_state())
         elif path == "/api/colours" and method == "POST":
             err = set_colours(None if body.get("reset") else body.get("colours"))

@@ -1,5 +1,5 @@
 {
- "version": "2026.11.23b",
+ "version": "2026.11.28",
  "files": [
   {
    "name": "main.py",
@@ -8,13 +8,13 @@
   },
   {
    "name": "app.py",
-   "size": 23043,
-   "sha256": "7e9f5d6aa75087c2c0c3c2f5b48b099b5c48cf2fa3114362253200f4b64107a6"
+   "size": 23912,
+   "sha256": "f44859f01a50a6ee94609b7494a716f27aa21f49ce2f64467240c853f47afd9a"
   },
   {
    "name": "index.html",
-   "size": 14412,
-   "sha256": "8ea063992c5649a694d639bbb4f32a5d82029e49663053891379aea36cdf43f3"
+   "size": 15013,
+   "sha256": "622a1257e00ce93fabae8ec9329b42d308c3a4ee9e850e65fdde47923b7b25cd"
   },
   {
    "name": "update.html",

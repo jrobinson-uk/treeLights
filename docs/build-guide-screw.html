@@ -1,0 +1,192 @@
+<title>Screw Terminal Board Build</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@600&family=IBM+Plex+Sans:wght@400;600&display=swap">
+<style>
+/* Layout: one reading column; each step is a heading, a full-width board image, then the actions. */
+:root {
+  --bg: #f5f3ee; --surface: #ffffff; --fg: #1d1f1c; --muted: #5d625a; --line: #dcd8cd;
+  --accent: #a35f00; --accent-soft: #fbeccf; --code-bg: #ecebe4;
+  --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-head: "IBM Plex Sans Condensed", "IBM Plex Sans", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #141613; --surface: #1c1f1b; --fg: #ecebe5; --muted: #a4a99f; --line: #33372f;
+  --accent: #f4a300; --accent-soft: #3a2c10; --code-bg: #262a24; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #141613; --surface: #1c1f1b; --fg: #ecebe5; --muted: #a4a99f; --line: #33372f;
+  --accent: #f4a300; --accent-soft: #3a2c10; --code-bg: #262a24; color-scheme: dark }
+body { background: var(--bg); color: var(--fg); font: 16px/1.6 var(--font-body); }
+main { max-width: 820px; margin: 0 auto; padding-block: 28px 64px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+h1, h2 { font-family: var(--font-head); text-wrap: balance; line-height: 1.2; }
+h1 { font-size: 2rem; font-weight: 600; margin: 0 0 12px; }
+h2 { font-size: 1.4rem; font-weight: 600; margin: 44px 0 10px; padding-top: 14px; border-top: 1px solid var(--line); }
+h2:first-of-type { border-top: 0; }
+p, li { max-width: 68ch; }
+ul, ol { padding-left: 1.4em; }
+li + li { margin-top: 4px; }
+li > ul { margin-top: 4px; }
+strong { font-weight: 600; }
+em { font-style: normal; text-decoration: underline; text-decoration-color: var(--accent); text-underline-offset: 3px; }
+hr { border: 0; height: 0; margin: 8px 0; }
+code { font-family: var(--font-mono); font-size: 0.9em; background: var(--code-bg); padding: 1px 5px; border-radius: 4px; }
+figure { margin: 14px 0 16px; background: #0f100e; border-radius: 10px; padding: 6px; overflow-x: auto; }
+figure img { display: block; width: 100%; min-width: 560px; height: auto; }
+.step-tag { display: inline-block; font-family: var(--font-mono); font-size: 0.78rem; letter-spacing: 0.04em;
+  color: var(--accent); background: var(--accent-soft); border-radius: 999px; padding: 2px 10px; margin-bottom: 6px; }
+.callout { background: var(--accent-soft); border-radius: 8px; padding: 10px 14px; margin: 12px 0; }
+.callout p { margin: 0; }
+.table-wrap { overflow-x: auto; margin: 12px 0; }
+table { border-collapse: collapse; width: 100%; min-width: 440px; background: var(--surface); }
+th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-weight: 600; font-size: 0.9rem; color: var(--muted); }
+a { color: var(--accent); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+</style>
+<main>
+<h1>Building the tree lights board: screw terminal version</h1>
+<p>This is another way to build the board from <a href="https://github.com/jrobinson-uk/treeLights/blob/master/docs/BUILD.md">the main guide</a>. It uses a <strong>3-way screw terminal</strong> (blue, 3 legs in one row, 5.08 mm apart) instead of the six-legged lever terminal.</p>
+<p>The terminal sits further back from the case's cable slot, in the block of holes just above the rails, so the wires have room to spread out before they go into it. Everything else is the same as the main guide: the VB wire, the resistor, links B1 and B2, and the data pin (GP0). The capacitor sits one column further left.</p>
+<p>Most images show the <strong>top</strong> of the board with the USB end at the top. The <strong>underside</strong> images show the board turned over left to right, so everything is mirrored, the same as when you look at your real board. Amber marks what's new in each step. The numbers under each image are column numbers.</p>
+<h2>How to find your way around</h2>
+<ul>
+<li><strong>Columns.</strong> Column 1 is the one with <strong>VB</strong> above it and <strong>0</strong> below it. Count to the right from there (on the underside, count to the left).</li>
+<li><strong>The bottom block.</strong> These are the three rows of holes just above the bottom edge pads (0, 1, G, 2…). In each column, those three holes are joined. Call them <strong>row 1</strong> (the top one, nearest the rails), <strong>row 2</strong> and <strong>row 3</strong> (nearest the edge pads).</li>
+<li><strong>The rails.</strong> These are the two long horizontal rows just above the bottom block, left half (columns 1 to 10). The lower one is the <strong>5V rail</strong>. Link B3 joins the <strong>upper rail</strong> to it, so both carry 5V.</li>
+<li><strong>The terminal block.</strong> This is the block of three-hole strips just above the upper rail. Like the bottom block, each column's three holes are joined. The terminal's legs go in its <strong>middle row</strong>.</li>
+<li><strong>Edge pads.</strong> Each pad along the top and bottom edges is one of the Pico's pins (0 is GP0, G is ground, VB is VBUS, the 5V from USB). They connect to nothing else unless you link them.</li>
+<li><strong>Links and wires on the underside.</strong></li>
+<li><strong>Links (B1 to B3)</strong> are short bare wires. Each one lies flat and is soldered onto the outside of joints (see "Making a link" in the main guide). Use the legs you trim off the resistor.</li>
+<li><strong>Wires (W2 and W3)</strong> are thin insulated wires laid flat on the underside, soldered only at their two ends. They cross the rails, so they <strong>must</strong> be insulated.</li>
+</ul>
+<h2>What you need</h2>
+<ul>
+<li>3-way screw terminal, 5.08 mm pitch</li>
+<li>330 Ω resistor (orange, orange, brown)</li>
+<li>1000 µF capacitor, 6.3 V or more, up to about <strong>16 mm</strong> tall upright</li>
+<li>About 100 mm of thin insulated solid-core wire, for W1, W2 and W3</li>
+<li>Masking tape, to hold parts flat while you solder</li>
+</ul>
+<h2>Before you start: two things to measure</h2>
+<ol>
+<li><strong>The terminal's depth,</strong> front to back. The drawings assume about 8 mm. That puts its front face just behind the upper rail. If yours is deeper, it covers some rail holes, which is fine: nothing on the top uses them.</li>
+<li><strong>The height of the wire holes,</strong> from the bottom of the terminal to the middle of a hole. The case's cable slot is centred 7 mm above the board and is 6 mm tall, so it covers 4 to 10 mm. If your holes are within that range, the wires will reach. Holes 6 mm up are fine. If not, tell me the measurement and I'll move the slot.</li>
+</ol>
+<h2>Converting the lever terminal build</h2>
+<p>If you've already built the board from the main guide, you only need to <strong>desolder the lever terminal</strong> (all six legs). Everything else can stay:</p>
+<ul>
+<li><strong>W1, R, B1, B2 and C stay.</strong> In this build the capacitor is one column further left. You can leave it where it is, but it sits closer to the data wire. Move it if the wire is a tight fit.</li>
+<li><strong>Old links B3, B4 and B5 come loose</strong> when you desolder the terminal, because they're soldered onto its joints. Trim B3 flush at the resistor, B5 flush at the <strong>G</strong> pad, and remove B4 completely, so no bare wire is left on the 5V rail.</li>
+</ul>
+<p>Then do steps 4 and 5 below, and the checks in step 7.</p>
+<hr />
+<h2 id="step-0"><span class="step-tag">STEP 0</span><br>Starting point</h2>
+<figure><img alt="Starting point" src="build-screw/step-0-start.svg" loading="lazy"></figure>
+<p>The Pico's sockets are soldered on. Nothing else is fitted yet.</p>
+<h2 id="step-1"><span class="step-tag">STEP 1</span><br>VB wire (W1)</h2>
+<figure><img alt="Step 1" src="build-screw/step-1-vb-wire.svg" loading="lazy"></figure>
+<p>Same as the main guide. This takes the 5V from the Pico's USB socket to the 5V rail.</p>
+<ol>
+<li>Cut about 60 mm of insulated wire and strip 3 mm from each end.</li>
+<li>Push one end into the <strong>VB</strong> pad: top edge, column 1.</li>
+<li>Run the wire down the left edge of the prototyping area, between the Pico sockets and column 1.</li>
+<li>Push the other end into the <strong>5V rail, column 1</strong> (the lower rail).</li>
+<li>Bend both ends over on the underside so the wire stays put.</li>
+</ol>
+<h2 id="step-2"><span class="step-tag">STEP 2</span><br>Resistor (R)</h2>
+<figure><img alt="Step 2" src="build-screw/step-2-resistor.svg" loading="lazy"></figure>
+<ol>
+<li>Bend the resistor's legs so they're 4 holes apart (10 mm).</li>
+<li>Fit it flat in <strong>row 3 of the bottom block</strong>, from <strong>column 1 to column 5</strong>.</li>
+<li>Bend the legs out on the underside. <strong>Don't trim the column 1 leg yet</strong>: it makes link B1 in the next step.</li>
+</ol>
+<h2 id="step-3"><span class="step-tag">STEP 3</span><br>Underside: solder, then links B1 and B2</h2>
+<figure><img alt="Step 3" src="build-screw/step-3-underside.svg" loading="lazy"></figure>
+<p>Turn the board over. Column 1 is now on the <strong>right</strong>, next to the Pico sockets.</p>
+<ol>
+<li>Solder both ends of the VB wire and both resistor legs.</li>
+<li><strong>B1 (data from the Pico):</strong> bend the resistor's column 1 leg flat, down onto the <strong>0</strong> pad just below it, and solder it there. Trim off the rest and <strong>keep the piece</strong>.</li>
+<li>Trim the column 5 leg. Unlike the main guide, you don't need it long.</li>
+<li><strong>B2 (ground for the capacitor):</strong> make a link from the piece you kept, from the <strong>G</strong> pad below column 3 up to the column 3, row 3 pad. B2 has nothing to do with the resistor. It brings ground to column 3, ready for the capacitor\'s − leg in step 6. The resistor\'s body passes over column 3 on the top, but its legs are only in columns 1 and 5, so the two never touch.</li>
+</ol>
+<div class="callout"><p><strong>Check:</strong> the <strong>0</strong> pad beeps to the resistor's column 1 leg, and the <strong>G</strong> pad beeps to column 3, row 1.</p></div>
+<h2 id="step-4"><span class="step-tag">STEP 4</span><br>Screw terminal (T)</h2>
+<figure><img alt="Step 4" src="build-screw/step-4-terminal.svg" loading="lazy"></figure>
+<ol>
+<li>Put the terminal's legs in the <strong>middle row of the terminal block</strong> (just above the upper rail), in <strong>columns 5, 7 and 9</strong>, with the wire openings facing the <strong>bottom edge</strong>.</li>
+<li>Make sure it sits flat and square, then hold it down with tape.</li>
+</ol>
+<p>Its body covers columns 4 to 10 of that block. That's expected. Nothing on the top needs those holes.</p>
+<p>Viewed from the front, the contacts are <strong>D (data) · + (5V) · G (ground)</strong>, left to right, the same order as the lever terminal.</p>
+<h2 id="step-5"><span class="step-tag">STEP 5</span><br>Underside: terminal legs, link B3, wires W2 and W3</h2>
+<figure><img alt="Step 5" src="build-screw/step-5-underside.svg" loading="lazy"></figure>
+<ol>
+<li>Solder <strong>one</strong> leg first, then check the terminal is still flat. If it isn't, reheat that joint and press it down. Then solder the other two.</li>
+<li><strong>B3 (5V to the terminal):</strong> a bare link in <strong>column 7</strong>, from the pad just in front of the <strong>+</strong> leg (the row nearest the rails) across the upper rail to the <strong>5V rail</strong>. Solder it at both ends, and to the upper rail pad it crosses. That joins both rails to 5V, which is fine.</li>
+<li><strong>W2 (data to the terminal):</strong> an insulated wire in <strong>column 5</strong>, from <strong>row 1 of the bottom block</strong> (the resistor's strip) to the pad just in front of the <strong>D</strong> leg. Strip 2 mm at each end and poke the ends into the holes. Both are empty. It crosses both rails, and its insulation keeps it off them.</li>
+<li><strong>W3 (ground to the terminal):</strong> an insulated wire from the <strong>G</strong> pad below column 13 (between the <strong>9</strong> and <strong>10</strong> pads) to the pad just in front of the <strong>G</strong> leg (column 9). Run it up between columns 12 and 13, then across between the terminal row and the upper rail. Poke the ends into the holes. Any <strong>G</strong> pad works, because they're all the Pico's ground. This one has an empty hole, even on a board converted from the lever terminal.</li>
+</ol>
+<div class="callout"><p><strong>Watch for solder bridges:</strong>
+- B3 must not touch the column 6 or 8 pads beside it, or it shorts 5V to the strips next to the terminal.
+- W2 and W3 cross the 5V rails. If the insulation is damaged or pulled back, they'll short. Make sure only the ends are bare.</p></div>
+<h2 id="step-6"><span class="step-tag">STEP 6</span><br>Capacitor (C)</h2>
+<figure><img alt="Step 6" src="build-screw/step-6-capacitor.svg" loading="lazy"></figure>
+<p>This smooths the lights' 5V supply.</p>
+<ol>
+<li>The capacitor sits diagonally:</li>
+<li><strong>+ leg</strong> (the longer one, no stripe) in the <strong>5V rail, column 2</strong></li>
+<li><strong>− leg</strong> (the stripe side) in <strong>column 3, row 1</strong></li>
+</ol>
+<p>That's one column further left than in the main guide, which keeps it clear of the data wire's path to the terminal. It sits over the end of the VB wire, which is fine.
+2. Solder it from the underside and trim the legs.</p>
+<div class="callout"><p><strong>Get the polarity right:</strong> an electrolytic capacitor fitted backwards can fail with a pop.</p></div>
+<h2 id="step-7"><span class="step-tag">STEP 7</span><br>Check it before the Pico goes in</h2>
+<figure><img alt="Step 7" src="build-screw/step-7-check.svg" loading="lazy"></figure>
+<p>Red is 5V, grey is ground, and green is data. Set your multimeter to beep (continuity) and probe the screw heads, which are connected to the contacts:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Probe between</th>
+<th>Expect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Terminal <strong>+</strong> and the <strong>VB</strong> pad</td>
+<td>beep</td>
+</tr>
+<tr>
+<td>Terminal <strong>G</strong> and the <strong>G</strong> pad below column 13</td>
+<td>beep</td>
+</tr>
+<tr>
+<td>Terminal <strong>D</strong> and the resistor's column 5 end</td>
+<td>beep</td>
+</tr>
+<tr>
+<td><strong>0</strong> pad and terminal <strong>D</strong></td>
+<td>about 330 Ω on the resistance setting (no beep)</td>
+</tr>
+<tr>
+<td>Terminal <strong>+</strong> and terminal <strong>G</strong></td>
+<td><strong>no beep</strong>. A beep means 5V is shorted to ground: find it before going on.</td>
+</tr>
+<tr>
+<td>Terminal <strong>D</strong> and terminal <strong>+</strong> or <strong>G</strong></td>
+<td>no beep</td>
+</tr>
+</tbody>
+</table></div>
+<p>The capacitor may beep briefly between + and G while it charges from the meter. A beep that stops after a moment is fine; one that keeps going is a short.</p>
+<h2 id="step-8"><span class="step-tag">STEP 8</span><br>Finish</h2>
+<figure><img alt="Step 8" src="build-screw/step-8-done.svg" loading="lazy"></figure>
+<ol>
+<li>Plug the Pico in, with its USB end at the top.</li>
+<li>Strip about 6 mm from each of the lights' three wires.</li>
+<li>Loosen each screw, push a wire into its opening, and tighten the screw. Tug each wire to check it's held. From the front, left to right: <strong>data</strong>, <strong>+5V</strong>, <strong>ground</strong>.</li>
+<li>Tighten the screws <strong>before</strong> the lid goes on. You can't reach them afterwards.</li>
+<li>Plug in USB power. The software already uses GP0, so nothing needs changing.</li>
+</ol>
+<p>The case's cable slot is centred on column 7, the middle contact, the same as for the lever terminal. The wires have about 15 mm between the slot and the terminal to fan out.</p>
+</main>

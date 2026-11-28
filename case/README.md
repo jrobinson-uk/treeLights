@@ -4,7 +4,7 @@ Two versions of a case for the ProtoMate for Pico board. Each has a base, a lid,
 
 | Version | Files | Height | Board held by | Pico |
 |---|---|---|---|---|
-| Low-profile (pins) | `case-pins-*.stl`, `treelights_case_pins.py` | 24.6 mm | Drops onto four pins; posts under the lid clamp it | Plugged into 8.5 mm sockets |
+| Low-profile (pins) | `case-pins-*.stl`, `treelights_case_pins.py` | 27.6 mm | Drops onto four pins; posts under the lid clamp it | Plugged into 8.5 mm sockets |
 | Screwed | `case-*.stl`, `treelights_case.py` | 28 mm | Four M2.5 screws into standoffs | Plugged into 8.5 mm sockets |
 
 ## Low-profile version
@@ -14,7 +14,7 @@ All heights are worked out from the stack settings at the top of `treelights_cas
 - **Pins:** 2.45 mm on one diagonal (they locate the board) and 2.30 mm on the other (they allow for print error), on 4.5 mm shoulders 3 mm tall. The ProtoMate's holes are taken as 2.7 mm: measure yours and print a base to test the fit before the lid.
 - **Lid posts:** hollow so they slip over the pin tips and press on the board's corners. If the lid won't close, raise `POST_GAP`.
 - **Under the board:** 3 mm. Trim the pins under the board flush.
-- **As built:** the Pico plugs into sockets (11 mm above the board), and its header pins stick out 2.5 mm above it. The lever terminal is 13 mm tall with its levers closed. The lid's underside is 22.6 mm up, and the whole case is 24.6 mm tall. These were measured from a photo, so check them with calipers if you can.
+- **As built:** the Pico plugs into sockets (11 mm above the board), and its header pins stick out 2.5 mm above it. The lever terminal is 13 mm tall with its levers closed. The lid's underside is 25.6 mm up (4 mm above the tallest part), and the whole case is 27.6 mm tall. These were measured from a photo, so check them with calipers if you can.
 - **Lid lip:** notched over the terminal and at the USB end.
 
 ## Screwed version
@@ -39,7 +39,7 @@ If you're unsure, print the base first and check the board fits.
 
 ## Printing the base
 
-A 0.6 mm chamfer round the bottom edge of both bases hides any first-layer squash ("elephant's foot"). Set `BOTTOM_CHAMFER = 0` in `treelights_case.py` to leave it out.
+Both bases have a square bottom edge. To add a 45° chamfer round it, which hides first-layer squash ("elephant's foot"), set `BOTTOM_CHAMFER` in `treelights_case.py`, for example to 0.6.
 
 To stop the corners lifting (PLA on a Bambu Lab P1S with the Cool Plate SuperTack):
 

@@ -34,7 +34,7 @@ BOOTSEL_H = 3.0          # button top above the Pico's top surface
 PICO_PINS_ABOVE = 2.5    # header pin tips sticking out of the Pico's top surface
 TALLEST_PART = 13.0      # tallest part on the board above its top surface
                          # (the lever terminal, levers closed: about 13 mm)
-HEADROOM = 1.0           # space left under the lid
+HEADROOM = 4.0           # space left under the lid (1 mm, plus 3 mm spare)
 LID_T = 2.0
 
 # ---------------- pins ----------------

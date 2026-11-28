@@ -76,7 +76,7 @@ Turn the board over. Column 1 is now on the **right**, next to the Pico sockets.
 1. Solder both ends of the VB wire and both resistor legs.
 2. **B1 (data from the Pico):** bend the resistor's column 1 leg flat, down onto the **0** pad just below it, and solder it there. Trim off the rest of the leg and **keep the piece**.
 3. **Leave the column 5 leg long.** Bend it flat against the board, pointing towards column 6. It becomes link B3 in step 5.
-4. **B2 (ground for the capacitor):** make a link from the piece you kept: from the **G** pad below column 3 up to the column 3, row 3 pad. Both of those holes are empty, so you can solder to the pads or poke the ends in.
+4. **B2 (ground for the capacitor):** make a link from the piece you kept: from the **G** pad below column 3 up to the column 3, row 3 pad. Both of those holes are empty, so you can solder to the pads or poke the ends in. B2 has nothing to do with the resistor. It brings ground to column 3, ready for the capacitor\'s − leg in step 6. The resistor\'s body passes over column 3 on the top, but its legs are only in columns 1 and 5, so the two never touch.
 
 **Check:** the **0** pad beeps to the resistor's column 1 leg, and the **G** pad beeps to column 3, row 1.
 

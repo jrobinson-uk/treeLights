@@ -56,8 +56,8 @@ a { color: var(--accent); }
 """
 
 
-def build():
-    md = open(os.path.join(HERE, "BUILD.md")).read()
+def build(src="BUILD.md", dst="build-guide.html", title="Tree Lights Board Build"):
+    md = open(os.path.join(HERE, src)).read()
     html = markdown.markdown(md, extensions=["tables"])
     # images: own figure, not inside a <p>
     html = re.sub(r'<p><img alt="([^"]*)" src="([^"]+)" /></p>',
@@ -69,15 +69,17 @@ def build():
     html = re.sub(r"<p><strong>(Check:|Watch for solder bridges:|Get the polarity right:)</strong>(.*?)</p>",
                   r'<div class="callout"><p><strong>\1</strong>\2</p></div>', html, flags=re.S)
     html = html.replace("<table>", '<div class="table-wrap"><table>').replace("</table>", "</table></div>")
-    page = ('<title>Tree Lights Board Build</title>\n'
+    html = re.sub(r'href="BUILD\.md"', 'href="https://github.com/jrobinson-uk/treeLights/blob/master/docs/BUILD.md"', html)
+    page = ('<title>%s</title>\n' % title +
             '<meta name="claude:viewport-fit-sides" content="cover">\n'
             '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500'
             '&family=IBM+Plex+Sans+Condensed:wght@600&family=IBM+Plex+Sans:wght@400;600&display=swap">\n'
             '<style>%s</style>\n<main>\n%s\n</main>\n' % (STYLE, html))
-    out = os.path.join(HERE, "build-guide.html")
+    out = os.path.join(HERE, dst)
     open(out, "w").write(page)
     print("wrote", out, len(page), "bytes")
 
 
 if __name__ == "__main__":
-    build()
+    import sys
+    build(*sys.argv[1:])
